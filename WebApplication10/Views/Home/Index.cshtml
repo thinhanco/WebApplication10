@@ -1,0 +1,1085 @@
+﻿@{
+    Layout = null;
+}
+<!doctype html>
+<html lang="vi">
+ 
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lumina Hotel - Trải nghiệm nghỉ dưỡng đẳng cấp</title>
+    <!-- Thư viện Font và Icon -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <style>
+      /* =========================================
+           1. CSS VARIABLES (KHÔNG HARDCODE MÀU/FONT)
+           ========================================= */
+      :root {
+        /* Bảng màu chính (Theme Colors) */
+        --primary-color: #d4af37; /* Màu vàng Gold sang trọng */
+        --primary-hover: #b5952f;
+        --secondary-color: #1a252f; /* Xanh đen đậm */
+
+        /* Màu nền (Backgrounds) */
+        --bg-body: #f8f9fa;
+        --bg-white: #ffffff;
+        --bg-dark: #222222;
+        --bg-overlay: rgba(0, 0, 0, 0.6);
+        --bg-transparent: rgba(255, 255, 255, 0.95);
+
+        /* Màu chữ (Text Colors) */
+        --text-main: #333333;
+        --text-light: #666666;
+        --text-white: #ffffff;
+        --text-dark: #111111;
+
+        /* Viền và Bóng (Borders & Shadows) */
+        --border-color: #e0e0e0;
+        --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.1);
+        --shadow-dark: 0 10px 30px rgba(0, 0, 0, 0.5);
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 12px;
+
+        /* Font chữ */
+        --font-heading: "Playfair Display", serif;
+        --font-body: "Poppins", sans-serif;
+
+        /* Transition */
+        --transition-fast: all 0.3s ease;
+      }
+
+      /* =========================================
+           2. GLOBAL STYLES
+           ========================================= */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: var(--font-body);
+        color: var(--text-main);
+        background-color: var(--bg-body);
+        line-height: 1.6;
+        overflow-x: hidden;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      .logo {
+        font-family: var(--font-heading);
+        color: var(--text-dark);
+      }
+
+      a {
+        text-decoration: none;
+        color: inherit;
+        transition: var(--transition-fast);
+      }
+
+      ul {
+        list-style: none;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 10px 24px;
+        background-color: var(--primary-color);
+        color: var(--text-white);
+        border: none;
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition-fast);
+      }
+
+      .btn:hover {
+        background-color: var(--primary-hover);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 3rem;
+      }
+
+      .section-title span {
+        color: var(--primary-color);
+      }
+
+      section {
+        padding: 5rem 0;
+      }
+
+      /* =========================================
+           3. HEADER & NAVIGATION
+           ========================================= */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        background-color: var(--bg-transparent);
+        box-shadow: var(--shadow-light);
+        transition: var(--transition-fast);
+      }
+
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 80px;
+      }
+
+      .logo {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+      }
+
+      .nav-menu {
+        display: flex;
+        gap: 2rem;
+      }
+
+      .nav-menu li a {
+        font-weight: 500;
+      }
+
+      .nav-menu li a:hover {
+        color: var(--primary-color);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .social-links {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .social-links a {
+        color: var(--secondary-color);
+        font-size: 1.2rem;
+      }
+
+      .social-links a:hover {
+        color: var(--primary-color);
+      }
+
+      .menu-toggle {
+        display: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--secondary-color);
+      }
+
+      /* =========================================
+           4. HERO SECTION
+           ========================================= */
+      .hero {
+        position: relative;
+        height: 100vh;
+        background: url("https://anviethouse.vn/wp-content/uploads/2021/12/Thiet-ke-phong-khach-san-phong-cach-indochine-1-2.jpg")
+          center/cover no-repeat;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding-top: 80px;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: var(--bg-overlay);
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        color: var(--text-white);
+        max-width: 800px;
+      }
+
+      .hero-content h1 {
+        color: var(--text-white);
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        text-shadow: var(--shadow-dark);
+      }
+
+      .hero-content p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        color: var(--border-color);
+      }
+
+      /* =========================================
+           5. BOOKING FORM (Floating)
+           ========================================= */
+      .booking-section {
+        position: relative;
+        z-index: 10;
+        margin-top: -60px; /* Đẩy form lên đè vào Hero */
+        padding: 0;
+      }
+
+      .booking-form {
+        background-color: var(--bg-white);
+        padding: 2rem;
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-light);
+        display: grid;
+        grid-template-columns: repeat(5, 1fr) auto;
+        gap: 1rem;
+        align-items: end;
+
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--text-main);
+      }
+
+      .form-group input,
+      .form-group select {
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-body);
+        color: var(--text-main);
+        background-color: var(--bg-white);
+        outline: none;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        border-color: var(--primary-color);
+      }
+
+      .booking-form .btn {
+        height: 44px; /* Khớp chiều cao với input */
+      }
+
+      /* =========================================
+           6. FEATURED ROOMS
+           ========================================= */
+      .room-wrap{
+        padding: 40px 0;
+      }
+      .rooms-grid {
+        width: 100%;
+        overflow-x: auto;
+        margin: 3em auto;
+        display: flex;
+        gap: 1em;
+        scroll-behavior: smooth;
+        anchor-name: --room-grid;
+        scroll-snap-type: x mandatory;
+        scroll-marker-group: after;
+        position: relative;
+      }
+        .rooms-grid::scroll-marker-group{
+            display: flex;
+            justify-content: center;
+            gap: .5em;
+        }
+        .rooms-grid::webkit-scrollbar {
+            display: none; 
+        }
+        .rooms-grid::scroll-button(right), .rooms-grid::scroll-button(left){
+            content: '>';
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            font-family: var(--font-body);
+            font-size: 3rem;
+            color: var(--bg-white);
+            height: 60px;
+            width: 60px;
+            border-radius: 50%;
+            /* padding-bottom: .1em; */
+            cursor: pointer;
+            position: fixed;
+            position-anchor: --room-grid;
+            position-area: right center;
+            translate: 50%;
+        }
+        .rooms-grid::scroll-button(left){
+            content: '<';
+            position-area: left center;
+            translate: -50%;
+        }
+        .rooms-grid::scroll-button(right):disabled, .rooms-grid::scroll-button(left):disabled{
+            opacity: 0.5;
+            cursor: auto;
+        }
+        .room-card {
+         
+            flex: 0 0 calc((100% - 2em) / 3) ; 
+            
+            background-color: var(--bg-white);
+            border-radius: var(--radius-md);    
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+            transition: var(--transition-fast);
+        
+            scroll-snap-align: start; 
+        }
+        .room-card::scroll-marker{
+            content: '';
+            width: 1em;
+            height: 1em;
+            background-color: var(--bg-dark);
+            border-radius: 50%;
+        }
+        .room-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-dark);
+        }
+    
+     
+      
+      /* Tùy chọn: Ẩn thanh cuộn ngang đi cho đẹp vì đã có 2 nút bấm */
+      .rooms-grid::-webkit-scrollbar {
+        display: none; /* Ẩn trên Chrome/Safari */
+      }
+      .rooms-grid {
+        -ms-overflow-style: none; /* Ẩn trên IE/Edge */
+        scrollbar-width: none; /* Ẩn trên Firefox */
+      }
+      .room-card {
+        background-color: var(--bg-white);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+        transition: var(--transition-fast);
+      }
+
+      .room-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-dark);
+      }
+
+      .room-img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+      }
+
+      .room-info {
+        padding: 1.5rem;
+      }
+
+      .room-info h3 {
+        margin-bottom: 0.5rem;
+      }
+
+      .room-price {
+        color: var(--primary-color);
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+
+      .room-features {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-light);
+        font-size: 0.9rem;
+      }
+
+      .room-features i {
+        color: var(--primary-color);
+      }
+
+      /* =========================================
+           7. SERVICES SECTION
+           ========================================= */
+      .services {
+        background-color: var(--bg-white);
+      }
+
+      .services-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        text-align: center;
+      }
+
+      .service-card {
+        padding: 2rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        transition: var(--transition-fast);
+      }
+
+      .service-card:hover {
+        border-color: var(--primary-color);
+        box-shadow: var(--shadow-light);
+      }
+
+      .service-card i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+      }
+
+      .service-card h4 {
+        margin-bottom: 0.5rem;
+      }
+
+      .service-card p {
+        color: var(--text-light);
+        font-size: 0.9rem;
+      }
+
+      /* =========================================
+           8. FOOTER
+           ========================================= */
+      footer {
+        background-color: var(--bg-dark);
+        color: var(--border-color);
+        padding: 4rem 0 2rem;
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .footer-col h3 {
+        color: var(--text-white);
+        margin-bottom: 1.5rem;
+      }
+
+      .footer-col p,
+      .footer-col ul li {
+        margin-bottom: 0.8rem;
+      }
+
+      .footer-col ul li a:hover {
+        color: var(--primary-color);
+      }
+
+      .footer-bottom {
+        text-align: center;
+        padding-top: 2rem;
+        border-top: 1px solid var(--text-light);
+      }
+
+      /* =========================================
+           9. RESPONSIVE DESIGN (MOBILE)
+           ========================================= */
+      @@media (max-width: 992px) {
+        .booking-form {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      @@media (max-width: 768px) {
+        .hero-content h1 {
+          font-size: 2.5rem;
+        }
+
+        .menu-toggle {
+          display: block;
+        }
+
+        .nav-menu {
+          position: absolute;
+          top: 80px;
+          left: -100%;
+          width: 100%;
+          background-color: var(--bg-white);
+          flex-direction: column;
+          gap: 0;
+          text-align: center;
+          transition: var(--transition-fast);
+          box-shadow: var(--shadow-light);
+        }
+
+        .nav-menu.active {
+          left: 0;
+        }
+
+        .nav-menu li {
+          padding: 15px 0;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .booking-form {
+          grid-template-columns: 1fr;
+        }
+
+        .booking-section {
+          margin-top: -20px;
+        }
+      }
+       /* =========================================
+           9. RESPONSIVE DESIGN (CHUẨN BOOTSTRAP)
+           ========================================= */
+      
+      /* XL - Màn hình Laptop nhỏ gọn (< 1200px) */
+      @@media (max-width: 1199.98px) {
+        .booking-form {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .booking-form .btn {
+          grid-column: 1 / -1; /* Ép nút bấm tràn hết dòng */
+        }
+      }
+
+      /* LG - Tablet nằm ngang (< 992px) */
+      @@media (max-width: 991.98px) {
+        .hero-content h1 {
+          font-size: 3rem;
+        }
+
+        /* 1. Đưa menu thành dạng rút gọn Hamburger */
+        .menu-toggle {
+          display: block;
+        }
+        .header-right > .btn {
+          display: none; /* Tạm ẩn nút đăng nhập cho gọn Header */
+        }
+        .nav-menu {
+          position: absolute;
+          top: 80px;
+          left: -100%;
+          width: 100%;
+          background-color: var(--bg-white);
+          flex-direction: column;
+          gap: 0;
+          text-align: center;
+          transition: var(--transition-fast);
+          box-shadow: var(--shadow-light);
+        }
+        .nav-menu.active {
+          left: 0;
+        }
+        .nav-menu li {
+          padding: 15px 0;
+          border-bottom: 1px solid var(--border-color);
+        }
+        
+        /* 2. Căn lại danh sách phòng (Hiển thị 2 thẻ thay vì 3) */
+        .room-card {
+          flex: 0 0 calc((100% - 1em) / 2) !important; 
+        }
+      }
+
+      /* MD - Tablet nằm dọc (< 768px) */
+      @@media (max-width: 767.98px) {
+        .hero-content h1 {
+          font-size: 2.5rem;
+        }
+        .section-title {
+          font-size: 2rem;
+        }
+        
+        /* Chỉnh lại Form Book phòng */
+        .booking-section {
+          margin-top: -30px;
+        }
+        .booking-form {
+          grid-template-columns: repeat(2, 1fr); /* 2 cột */
+          padding: 1.5rem;
+        }
+        
+        /* Thu nhỏ 2 nút bấm của phòng */
+        .rooms-grid::scroll-button(right), 
+        .rooms-grid::scroll-button(left){
+          width: 45px;
+          height: 45px;
+          font-size: 2rem;
+        }
+      }
+
+      /* SM - Màn hình Điện thoại di động (< 576px) */
+      @@media (max-width: 575.98px) {
+        .hero-content h1 {
+          font-size: 2rem;
+        }
+        .hero-content p {
+          font-size: 1rem;
+        }
+        .social-links {
+          display: none; /* Ẩn mạng xã hội cho thanh Header nhẹ nhàng */
+        }
+
+        /* Form Book phòng gộp thành 1 cột duy nhất */
+        .booking-section {
+          margin-top: 0;
+          padding: 0 20px;
+        }
+        .booking-form {
+          grid-template-columns: 1fr;
+        }
+        
+        /* Danh sách phòng: Chỉ hiển thị 1 thẻ, chừa 1 chút lòi ra của thẻ tiếp theo để báo hiệu vuốt */
+        .room-card {
+          flex: 0 0 85% !important; 
+        }
+
+        /* Ẩn hẳn 2 nút cuộn vì người dùng Mobile sẽ vuốt bằng ngón tay */
+        .rooms-grid::scroll-button(right), 
+        .rooms-grid::scroll-button(left){
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header id="header">
+      <div class="container header-container">
+        <a href="#" class="logo">Hotel Vip</a>
+
+        <ul class="nav-menu" id="nav-menu">
+          <li><a href="#">Trang chủ</a></li>
+          <li><a href="#rooms">Phòng Nghỉ</a></li>
+          <li><a href="#services">Dịch vụ</a></li>
+          <!-- <li><a href="#about">Về chúng tôi</a></li> -->
+          <li><a href="#contact">Liên hệ</a></li>
+        </ul>
+
+        <div class="header-right">
+          <div class="social-links">
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+          </div>
+          <a href="/Account/Login" class="btn">Đăng nhập</a>
+          <i class="fas fa-bars menu-toggle" id="menu-toggle"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="hero-content container">
+        <h1>Tận Hưởng Sự Sang Trọng & Bình Yên</h1>
+        <p>
+          Trải nghiệm dịch vụ đẳng cấp 5 sao với không gian nghỉ dưỡng tuyệt vời
+          nhất dành riêng cho bạn.
+        </p>
+        <a href="#booking" class="btn">Khám phá ngay</a>
+      </div>
+    </section>
+
+    <!-- BOOKING FORM SECTION (Session Đặt phòng) -->
+    <section id="booking" class="booking-section container">
+      <form class="booking-form" id="booking-form">
+        <div class="form-group">
+          <label>Ngày Nhận Phòng</label>
+          <input type="date" required />
+        </div>
+        <div class="form-group">
+          <label>Ngày Trả Phòng</label>
+          <input type="date" required />
+        </div>
+        <div class="form-group">
+          <label>Người lớn</label>
+          <select>
+            <option>1 Người</option>
+            <option selected>2 Người</option>
+            <option>3 Người</option>
+            <option>4 Người</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Trẻ em</label>
+          <select>
+            <option selected>0</option>
+            <option>1 Trẻ</option>
+            <option>2 Trẻ</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Hạng Phòng</label>
+          <select>
+            <option>Phòng Standard</option>
+            <option>Phòng Deluxe</option>
+            <option>Phòng Suite</option>
+            <option>Phòng Tổng thống</option>
+          </select>
+        </div>
+        <button type="submit" class="btn">Kiểm Tra</button>
+      </form>
+    </section>
+
+    <!-- FEATURED ROOMS SECTION -->
+    <section id="rooms" class="room-wrap container">
+      <h2 class="section-title">Phòng <span>Nổi Bật</span></h2>
+
+      <!-- BỔ SUNG: Bọc grid lại và thêm 2 nút -->
+      <div class="rooms-wrapper">
+        
+        
+
+        <!-- Giữ nguyên id cho thẻ rooms-grid -->
+        <div class="rooms-grid">
+        <!-- Room 1 -->
+        <div class="room-card">
+          <img
+            src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            alt="Deluxe Room"
+            class="room-img"
+          />
+          <div class="room-info">
+            <h3>Phòng Deluxe Hướng Biển</h3>
+            <div class="room-price">2.500.000₫ / đêm</div>
+            <div class="room-features">
+              <span><i class="fas fa-bed"></i> King Bed</span>
+              <span><i class="fas fa-users"></i> 2 Khách</span>
+              <span><i class="fas fa-vector-square"></i> 45m²</span>
+            </div>
+            <p
+              style="
+                color: var(--text-light);
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+              "
+            >
+              Tầm nhìn bao quát đại dương, ban công rộng rãi và bồn tắm thư
+              giãn.
+            </p>
+            <a href="#" class="btn" style="width: 100%; text-align: center"
+              >Đặt Ngay</a
+            >
+          </div>
+        </div>
+
+        <!-- Room 2 -->
+        <div class="room-card">
+          <img
+            src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            alt="Executive Suite"
+            class="room-img"
+          />
+          <div class="room-info">
+            <h3>Executive Suite</h3>
+            <div class="room-price">5.000.000₫ / đêm</div>
+            <div class="room-features">
+              <span><i class="fas fa-bed"></i> King Bed</span>
+              <span><i class="fas fa-users"></i> 3 Khách</span>
+              <span><i class="fas fa-vector-square"></i> 75m²</span>
+            </div>
+            <p
+              style="
+                color: var(--text-light);
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+              "
+            >
+              Phòng khách tách biệt, trang thiết bị nội thất hoàng gia nhập
+              khẩu.
+            </p>
+            <a href="#" class="btn" style="width: 100%; text-align: center"
+              >Đặt Ngay</a
+            >
+          </div>
+        </div>
+
+        <!-- Room 3 -->
+        <div class="room-card">
+          <img
+            src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            alt="Family Room"
+            class="room-img"
+          />
+          <div class="room-info">
+            <h3>Phòng Gia Đình</h3>
+            <div class="room-price">3.800.000₫ / đêm</div>
+            <div class="room-features">
+              <span><i class="fas fa-bed"></i> 2 Queen Beds</span>
+              <span><i class="fas fa-users"></i> 4 Khách</span>
+              <span><i class="fas fa-vector-square"></i> 60m²</span>
+            </div>
+            <p
+style="
+                color: var(--text-light);
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+              "
+            >
+              Không gian hoàn hảo cho gia đình, bao gồm khu vui chơi nhỏ cho trẻ
+              em.
+            </p>
+            <a href="#" class="btn" style="width: 100%; text-align: center"
+              >Đặt Ngay</a
+            >
+          </div>
+        </div>
+        <!-- BỔ SUNG: Room 4 -->
+        <div class="room-card">
+          <img
+            src="https://images.unsplash.com/photo-1590490360182-c33d57733427?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            alt="Standard Room"
+            class="room-img"
+          />
+          <div class="room-info">
+            <h3>Phòng Tiêu Chuẩn</h3>
+            <div class="room-price">1.500.000₫ / đêm</div>
+            <div class="room-features">
+              <span><i class="fas fa-bed"></i> 1 Double Bed</span>
+              <span><i class="fas fa-users"></i> 2 Khách</span>
+              <span><i class="fas fa-vector-square"></i> 30m²</span>
+            </div>
+            <p
+              style="
+                color: var(--text-light);
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+              "
+            >
+              Lựa chọn tiết kiệm với đầy đủ tiện nghi cơ bản, cửa sổ hướng vườn
+              xanh mát.
+            </p>
+            <a href="#" class="btn" style="width: 100%; text-align: center"
+              >Đặt Ngay</a
+            >
+          </div>
+        </div>
+
+        <!-- BỔ SUNG: Room 5 -->
+        <div class="room-card">
+          <img
+            src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+            alt="Pool Villa"
+            class="room-img"
+          />
+          <div class="room-info">
+            <h3>Villa Hồ Bơi Riêng</h3>
+            <div class="room-price">8.500.000₫ / đêm</div>
+            <div class="room-features">
+              <span><i class="fas fa-bed"></i> 2 King Beds</span>
+              <span><i class="fas fa-users"></i> 4 Khách</span>
+              <span><i class="fas fa-vector-square"></i> 120m²</span>
+            </div>
+            <p
+              style="
+                color: var(--text-light);
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+              "
+            >
+              Biệt thự riêng tư tuyệt đối với hồ bơi cá nhân, sân vườn và dịch
+              vụ quản gia 24/7.
+            </p>
+            <a href="#" class="btn" style="width: 100%; text-align: center"
+              >Đặt Ngay</a
+            >
+          </div>
+        </div>
+
+        <!-- BỔ SUNG: Room 6 -->
+        <div class="room-card">
+          <img
+            src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+alt="Rooftop Penthouse"
+            class="room-img"
+          />
+          <div class="room-info">
+            <h3>Penthouse Thượng Đỉnh</h3>
+            <div class="room-price">15.000.000₫ / đêm</div>
+            <div class="room-features">
+              <span><i class="fas fa-bed"></i> 3 King Beds</span>
+              <span><i class="fas fa-users"></i> 6 Khách</span>
+              <span><i class="fas fa-vector-square"></i> 250m²</span>
+            </div>
+            <p
+              style="
+                color: var(--text-light);
+                margin-bottom: 1rem;
+                font-size: 0.9rem;
+              "
+            >
+              Căn hộ cao cấp nhất tầng thượng, phòng khách siêu lớn, view 360 độ
+              toàn thành phố.
+            </p>
+            <a href="#" class="btn" style="width: 100%; text-align: center"
+              >Đặt Ngay</a
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- SERVICES SECTION -->
+    <section id="services" class="services">
+      <div class="container">
+        <h2 class="section-title">Tiện Ích <span>Đẳng Cấp</span></h2>
+        <div class="services-grid">
+          <div class="service-card">
+            <i class="fas fa-utensils"></i>
+            <h4>Nhà Hàng 5 Sao</h4>
+            <p>
+              Tinh hoa ẩm thực Á - Âu được chế biến bởi các đầu bếp danh tiếng.
+            </p>
+          </div>
+          <div class="service-card">
+            <i class="fas fa-swimming-pool"></i>
+            <h4>Hồ Bơi Vô Cực</h4>
+            <p>
+              Thư giãn tại hồ bơi trên tầng thượng với góc nhìn toàn cảnh thành
+              phố.
+            </p>
+          </div>
+          <div class="service-card">
+            <i class="fas fa-spa"></i>
+            <h4>Spa & Massage</h4>
+            <p>
+              Liệu trình làm đẹp, thư giãn cơ thể và tâm hồn với thảo mộc tự
+              nhiên.
+            </p>
+          </div>
+          <div class="service-card">
+            <i class="fas fa-dumbbell"></i>
+            <h4>Phòng Gym Yogo</h4>
+            <p>Trang bị máy móc hiện đại nhất mở cửa phục vụ khách 24/7.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div id="contact" class="container">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <h3 class="logo" style="color: var(--primary-color)">Hotel Vip</h3>
+            <p>
+              Khách sạn Hotel Vip cam kết mang đến cho quý khách trải nghiệm lưu
+              trú sang trọng, tiện nghi và ấm áp nhất.
+            </p>
+          </div>
+          <div class="footer-col">
+            <h3>Liên Kết Nhanh</h3>
+            <ul>
+              <li><a href="#">Về chúng tôi</a></li>
+              <li><a href="#">Loại phòng</a></li>
+              <li><a href="#">Ưu đãi & Khuyến mãi</a></li>
+              <li><a href="#">Tuyển dụng</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3>Thông Tin Liên Hệ</h3>
+            <p>
+              <i class="fas fa-map-marker-alt"></i> 123 Đường Tôn Đức Thắng, Q1,
+              TP.HCM
+            </p>
+            <p><i class="fas fa-phone"></i> +84 123 456 789</p>
+            <p><i class="fas fa-envelope"></i> booking@Hotel.com</p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2023 Lumina Hotel. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- JAVASCRIPT -->
+    <script>
+      // 1. Chức năng Toggle Menu cho Mobile
+      const menuToggle = document.getElementById("menu-toggle");
+      const navMenu = document.getElementById("nav-menu");
+
+      menuToggle.addEventListener("click", () => {
+        navMenu.classList.toggle("active");
+        // Đổi icon từ hamburger sang dấu X
+        if (navMenu.classList.contains("active")) {
+          menuToggle.classList.remove("fa-bars");
+          menuToggle.classList.add("fa-times");
+        } else {
+          menuToggle.classList.remove("fa-times");
+          menuToggle.classList.add("fa-bars");
+        }
+      });
+
+      // 2. Chức năng Sticky Header (Đổi nền khi scroll)
+      const header = document.getElementById("header");
+
+      window.addEventListener("scroll", () => {
+        if (window.scrollY > 50) {
+          // Sử dụng biến CSS để thay đổi nền thay vì hardcode
+          header.style.backgroundColor = "var(--bg-white)";
+          header.style.boxShadow = "var(--shadow-light)";
+        } else {
+          header.style.backgroundColor = "var(--bg-transparent)";
+          header.style.boxShadow = "none";
+        }
+      });
+
+      // 3. Xử lý form Booking (Mô phỏng)
+      const bookingForm = document.getElementById("booking-form");
+      bookingForm.addEventListener("submit", (e) => {
+        e.preventDefault(); // Ngăn chặn load lại trang
+        alert(
+          "Cảm ơn bạn! Hệ thống đang kiểm tra phòng trống. Chúng tôi sẽ chuyển hướng bạn sang trang thanh toán.",
+        );
+      });
+      // 4. Chức năng Lướt (Slider) cho danh sách phòng
+      const roomsGridEl = document.getElementById("rooms-grid");
+      const btnLeft = document.getElementById("slide-left");
+      const btnRight = document.getElementById("slide-right");
+
+      // Bấm nút phải: Lướt sang phải 350px (tương đương 1 thẻ phòng + khoảng cách)
+      btnRight.addEventListener("click", () => {
+        roomsGridEl.scrollBy({
+          top: 0,
+          left: 350,
+          behavior: "smooth",
+        });
+      });
+
+      // Bấm nút trái: Lướt sang trái 350px
+      btnLeft.addEventListener("click", () => {
+        roomsGridEl.scrollBy({
+          top: 0,
+          left: -350,
+          behavior: "smooth",
+        });
+      });
+    </script>
+  </body>
+</html>

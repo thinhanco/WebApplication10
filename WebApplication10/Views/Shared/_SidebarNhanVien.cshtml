@@ -1,0 +1,20 @@
+﻿<div class="sidebar">
+    <div class="sidebar-header"><h2>LUMINA</h2></div>
+    <div class="menu-list">
+        <a href="/NhanVien/Index" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+            <i class="fas fa-home"></i> Tổng quan
+        </a>
+        <a href="/NhanVien/DatCaLam" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "DatCaLam" ? "active" : "")">
+            <i class="fas fa-calendar-alt"></i> Đặt Ca Làm
+        </a>
+        <a href="/NhanVien/QuanLyPhong" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "QuanLyPhong" ? "active" : "")">
+            <i class="fas fa-bed"></i> Quản Lý Phòng
+        </a>
+        <a href="/NhanVien/QuanLyKhachHang" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "QuanLyKhachHang" ? "active" : "")">
+            <i class="fas fa-user-friends"></i> Khách Hàng
+        </a>
+        <a href="/Account/Logout" class="menu-item" style="margin-top: 100px; color: #ff6b6b;">
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+        </a>
+    </div>
+</div>

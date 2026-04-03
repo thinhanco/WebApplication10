@@ -1,0 +1,80 @@
+﻿<style>
+    :root {
+        --primary-gold: #d4af37;
+        --dark-blue: #1a252f;
+        --bg-light: #f8f9fa;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg-light);
+    }
+
+    /* Sidebar cố định bên trái */
+    .sidebar {
+        width: 280px;
+        height: 100vh;
+        background: var(--dark-blue);
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        color: white;
+    }
+    
+    .sidebar-header {
+        padding: 30px 20px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+        .sidebar-header h2 {
+            font-family:  serif;
+            color: var(--primary-gold);
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+    .menu-list {
+        padding: 20px 0;
+        list-style: none;
+        margin: 0;
+        padding-left: 0;
+    }
+
+    .menu-item {
+        padding: 15px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        cursor: pointer;
+        transition: 0.3s;
+        color: rgba(255,255,255,0.7);
+        text-decoration: none;
+        border-left: 4px solid transparent;
+    }
+
+        .menu-item:hover, .menu-item.active {
+            background: rgba(212, 175, 55, 0.1);
+            color: var(--primary-gold);
+            border-left: 4px solid var(--primary-gold);
+        }
+
+    /* Đẩy nội dung chính sang phải */
+    .main-content {
+        margin-left: 280px;
+        padding: 40px;
+        width: calc(100% - 280px);
+        min-height: 100vh;
+    }
+
+    .registration-card, .table-container {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border-top: 5px solid var(--primary-gold);
+    }
+</style>

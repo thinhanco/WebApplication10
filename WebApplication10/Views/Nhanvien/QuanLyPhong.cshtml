@@ -1,0 +1,58 @@
+﻿@model IEnumerable<WebApplication10.Models.Phong>
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quản Lý Phòng - Lumina Hotel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    @await Html.PartialAsync("_SidebarStyles")
+</head>
+<body>
+    <div class="d-flex">
+        @await Html.PartialAsync("_SidebarNhanVien")
+
+        <div class="main-content">
+            <h2 style="font-family: 'Playfair Display', serif; color: #d4af37; margin-bottom: 30px;">Quản Lý Trạng Thái Phòng</h2>
+            <div class="table-container p-0">
+                <table class="table table-hover mb-0">
+                    <thead style="background: #1a252f; color: #d4af37;">
+                        <tr>
+                            <th class="p-3">SỐ PHÒNG</th>
+                            <th class="p-3">LOẠI PHÒNG</th>
+                            <th class="p-3">TRẠNG THÁI</th>
+                            <th class="p-3">THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model)
+                        {
+                            <tr>
+                                <td class="p-3 fw-bold">#@p.SoPhong</td>
+                                <td class="p-3">@p.LoaiPhong</td>
+                                <td class="p-3">
+                                    <span class="badge @(p.TrangThai == "Trống" ? "bg-success" : "bg-danger")">@p.TrangThai</span>
+                                </td>
+                                <td class="p-3">
+                                    <form action="/NhanVien/CapNhatTrangThaiPhong" method="post" class="d-flex gap-2">
+                                        <input type="hidden" name="soPhong" value="@p.SoPhong" />
+                                        <select name="trangThaiMoi" class="form-select form-select-sm" style="width:120px">
+                                            <option value="Trống">Trống</option>
+                                            <option value="Đang ở">Đang ở</option>
+                                            <option value="Đang dọn">Đang dọn</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm" style="background:#d4af37; color:white;">Lưu</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

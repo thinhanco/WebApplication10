@@ -1,0 +1,24 @@
+﻿<div class="sidebar">
+    <div class="sidebar-header">
+        <h2>LUMINA</h2>
+    </div>
+    <div class="menu-list">
+        <!-- Thay href="#" bằng đường dẫn thật -->
+        <a href="/Admin/Index" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+            <i class="fas fa-shield-alt"></i> Báo Cáo
+        </a>
+        <a href="/Admin/QuanLyTaiKhoan" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "QuanLyTaiKhoan" ? "active" : "")">
+            <i class="fas fa-users-cog"></i> Quản Lý Tài Khoản
+        </a>
+        <a href="/Admin/QuanLyHeThong" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "QuanLyHeThong" ? "active" : "")">
+            <i class="fas fa-server"></i> Quản Lý Hệ Thống
+        </a>
+        <a href="/Admin/QuanLyNhanVien" class="menu-item @(ViewContext.RouteData.Values["Action"]?.ToString() == "QuanLyNhanVien" ? "active" : "")">
+            <i class="fas fa-user-tie"></i> Quản Lý Nhân Viên
+        </a>
+        
+        <a href="/Account/Logout" class="menu-item" style="margin-top: 100px; color: #ff6b6b;">
+            <i class="fas fa-sign-out-alt"></i> Thoát
+        </a>
+    </div>
+</div>

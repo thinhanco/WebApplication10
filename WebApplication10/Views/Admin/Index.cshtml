@@ -1,0 +1,136 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Lumina Hotel</title>
+    <!-- Bootstrap & Icon -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- 1. GỌI STYLE DÙNG CHUNG (Để đồng bộ Font Poppins và kiểu chữ LUMINA) -->
+    @await Html.PartialAsync("_SidebarStyles")
+
+    <style>
+            /* CSS riêng cho các Card ở trang Dashboard */
+            .admin-header {
+                background: var(--dark-blue);
+                color: white;
+                padding: 40px;
+                border-radius: 15px;
+                margin-bottom: 40px;
+                border-bottom: 5px solid var(--primary-gold);
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            }
+        
+            .card-stat {
+                border: none;
+                border-radius: 15px;
+                transition: 0.3s;
+                height: 100%;
+                background: white;
+                border-top: 4px solid var(--primary-gold);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            }
+        
+                .card-stat:hover {
+                    transform: translateY(-10px);
+                    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+                }
+        
+            .icon-box {
+                width: 50px;
+                height: 50px;
+                background: rgba(212, 175, 55, 0.1);
+                color: var(--primary-gold);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 10px;
+                margin-bottom: 20px;
+            }
+        
+            .btn-gold-outline {
+                border: 1px solid var(--primary-gold);
+                color: var(--primary-gold);
+                font-weight: 600;
+                transition: 0.3s;
+                text-decoration: none;
+                display: block;
+                text-align: center;
+                padding: 10px;
+                border-radius: 8px;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+            }
+        
+                .btn-gold-outline:hover {
+                    background: var(--primary-gold);
+                    color: #1a252f;
+                }
+    </style>
+</head>
+<body>
+    <div class="d-flex">
+        <!-- 2. GỌI SIDEBAR ADMIN DÙNG CHUNG (Sửa 1 nơi, chạy tất cả các trang) -->
+        @await Html.PartialAsync("_SidebarAdmin")
+
+        <!-- 3. NỘI DUNG CHÍNH -->
+        <div class="main-content">
+            <div class="admin-header">
+                <h1 style="font-weight: 700; color: var(--primary-gold); font-family: 'Poppins', sans-serif;">Quản Trị Viên</h1>
+                <p class="text-secondary">Chào mừng trở lại hệ thống quản lý Lumina Hotel.</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Card: Quản Lý Tài Khoản -->
+                <div class="col-md-4">
+                    <div class="card card-stat p-3">
+                        <div class="card-body d-flex flex-column">
+                            <div class="icon-box"><i class="fas fa-users"></i></div>
+                            <h5 class="fw-bold">Quản Lý Tài Khoản</h5>
+                            <ul class="list-unstyled small text-muted my-3 flex-grow-1">
+                                <li><i class="fas fa-chevron-right me-2 small"></i>Phân quyền tài khoản</li>
+                                <li><i class="fas fa-chevron-right me-2 small"></i>Thêm, Khóa tài khoản</li>
+                            </ul>
+                            <a href="/Admin/QuanLyTaiKhoan" class="btn-gold-outline">Chi tiết</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Quản Lý Hệ Thống -->
+                <div class="col-md-4">
+                    <div class="card card-stat p-3">
+                        <div class="card-body d-flex flex-column">
+                            <div class="icon-box"><i class="fas fa-database"></i></div>
+                            <h5 class="fw-bold">Quản Lý Hệ Thống</h5>
+                            <ul class="list-unstyled small text-muted my-3 flex-grow-1">
+                                <li><i class="fas fa-chevron-right me-2 small"></i>CRUD trên dữ liệu</li>
+                                <li><i class="fas fa-chevron-right me-2 small"></i>Phát hành chức năng</li>
+                            </ul>
+                            <a href="/Admin/QuanLyHeThong" class="btn-gold-outline">Cấu hình</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Quản Lý Nhân Viên -->
+                <div class="col-md-4">
+                    <div class="card card-stat p-3">
+                        <div class="card-body d-flex flex-column">
+                            <div class="icon-box"><i class="fas fa-id-card"></i></div>
+                            <h5 class="fw-bold">Quản Lý Nhân Viên</h5>
+                            <ul class="list-unstyled small text-muted my-3 flex-grow-1">
+                                <li><i class="fas fa-chevron-right me-2 small"></i>Chỉnh sửa ca làm việc</li>
+                                <li><i class="fas fa-chevron-right me-2 small"></i>Thêm mới nhân viên</li>
+                            </ul>
+                            <a href="/Admin/QuanLyNhanVien" class="btn-gold-outline">Điều hành</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

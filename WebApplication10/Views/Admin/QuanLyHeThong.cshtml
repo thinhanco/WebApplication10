@@ -1,0 +1,52 @@
+﻿@model IEnumerable<WebApplication10.Models.Phong>
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cấu Hình Hệ Thống - Lumina Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    @await Html.PartialAsync("_SidebarStyles")
+</head>
+<body>
+    <div class="d-flex">
+        @await Html.PartialAsync("_SidebarAdmin")
+
+        <div class="main-content">
+            <h2 style="font-family: 'Poppins', sans-serif; color: #d4af37; font-weight: 700; margin-bottom: 30px;">
+                CẤU HÌNH DỮ LIỆU HỆ THỐNG
+            </h2>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="registration-card text-center">
+                        <i class="fas fa-hotel fa-3x text-gold mb-3"></i>
+                        <h4>Danh Mục Phòng</h4>
+                        <p class="text-muted small">Thêm phòng mới, chỉnh sửa đơn giá và loại phòng.</p>
+                        <button class="btn btn-sm btn-dark w-100">QUẢN LÝ CRUD</button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="registration-card text-center">
+                        <i class="fas fa-concierge-bell fa-3x text-gold mb-3"></i>
+                        <h4>Dịch Vụ Đi Kèm</h4>
+                        <p class="text-muted small">Cấu hình giá Buffet, Spa, và các tiện ích khách sạn.</p>
+                        <button class="btn btn-sm btn-dark w-100">CẤU HÌNH</button>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="registration-card text-center">
+                        <i class="fas fa-file-invoice-dollar fa-3x text-gold mb-3"></i>
+                        <h4>Chính Sách Thuế/VAT</h4>
+                        <p class="text-muted small">Điều chỉnh mức VAT (8-10%) áp dụng cho hóa đơn.</p>
+                        <button class="btn btn-sm btn-dark w-100">CẬP NHẬT</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
