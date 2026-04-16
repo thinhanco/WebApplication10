@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using WebApplication10.Models; // Đảm bảo đúng namespace Models của bạn
@@ -28,8 +28,16 @@ namespace WebApplication10.Controllers
         }
 
         // --- CHỨC NĂNG 1: ĐẶT CA LÀM (SRS 3.2.3.1) ---
+        // --- CHỨC NĂNG 1: ĐẶT CA LÀM (SRS 3.2.3.1) ---
         public IActionResult DatCaLam()
         {
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            int maNV = HttpContext.Session.GetInt32("MaNV") ?? 0;
+
             // 1. Lấy danh sách các loại ca (Sáng, Chiều, Tối)
             var loaiCas = _db.CaLams.ToList();
 
@@ -45,25 +53,78 @@ namespace WebApplication10.Controllers
             }
 
             ViewBag.WeekDays = weekDays;
+
+            // Lấy danh sách ca đã đăng ký của nhân viên trong tuần này (để tô màu)
+            var registered = _db.DangKyCaLams
+                .Where(x => x.MaNV == maNV
+                         && x.NgayLam >= startOfWeek
+                         && x.NgayLam <= weekDays.Last())
+                .Select(x => new
+                {
+                    MaCa = x.MaCa,
+                    NgayLam = x.NgayLam.ToString("yyyy-MM-dd")
+                })
+                .ToList();
+
+            ViewBag.RegisteredShifts = registered;   // Dùng để tô màu trong View (giữ nguyên HTML cũ)
+
             return View(loaiCas);
         }
 
         [HttpPost]
-        public IActionResult DangKyCa(int maCa, DateTime ngayLam, string ghiChu)
+        public IActionResult DangKyCa(List<string> selectedShifts)
         {
-            // FR-EMP-SHIFT-06: Lưu thông tin đăng ký ca làm (Trạng thái mặc định: Chờ duyệt)
-            // (Lưu ý: Bạn cần tạo bảng DangKyCaLam trong Models trước)
-            return RedirectToAction("Index");
-        }
+            int? maNV = HttpContext.Session.GetInt32("MaNV");
+            if (maNV == null) return RedirectToAction("Login", "Account");
 
-        // --- CHỨC NĂNG 2: QUẢN LÝ PHÒNG (SRS 3.2.3.2) ---
+            if (selectedShifts == null || selectedShifts.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Vui lòng chọn ít nhất một ca làm!";
+                return RedirectToAction("DatCaLam");
+            }
+
+            foreach (var item in selectedShifts)
+            {
+                // item có dạng "1|2026-04-06"
+                var parts = item.Split('|');
+                int maCa = int.Parse(parts[0]);
+                DateTime ngayLam = DateTime.Parse(parts[1]);
+
+                // Kiểm tra xem đã tồn tại chưa để tránh lỗi DB
+                bool daTonTai = _db.DangKyCaLams.Any(x => x.MaNV == maNV && x.MaCa == maCa && x.NgayLam.Date == ngayLam.Date);
+
+                if (!daTonTai)
+                {
+                    var dangKy = new DangKyCaLam
+                    {
+                        MaNV = maNV.Value,
+                        MaCa = maCa,
+                        NgayLam = ngayLam.Date,
+                        TrangThai = "Pending"
+                    };
+                    _db.DangKyCaLams.Add(dangKy);
+                }
+            }
+
+            _db.SaveChanges();
+            TempData["SuccessMessage"] = "Đăng ký thành công các ca đã chọn!";
+            return RedirectToAction("DatCaLam");
+        }
+        // Thêm hàm này vào Controller
         public IActionResult QuanLyPhong()
         {
-            // Lấy danh sách phòng để nhân viên theo dõi trạng thái (SRS FR-RM-01)
+            // Kiểm tra đăng nhập (giống các hàm khác)
+            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
+            {
+                return RedirectToAction("Login", "Account");
+            }
+
+            // LẤY DỮ LIỆU TỪ SQL: Truy vấn danh sách tất cả các phòng
             var danhSachPhong = _db.Phongs.ToList();
+
+            // TRẢ VỀ VIEW: Gửi danh sách phòng qua file QuanLyPhong.cshtml
             return View(danhSachPhong);
         }
-
         [HttpPost]
         public IActionResult CapNhatTrangThaiPhong(int soPhong, string trangThaiMoi)
         {
