@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApplication10.Models
 {
@@ -14,7 +14,7 @@ namespace WebApplication10.Models
         public DbSet<ChucVu> ChucVus { get; set; }
         public DbSet<NhanVien> NhanViens { get; set; }
         public DbSet<TaiKhoans> TaiKhoans { get; set; }
-        public DbSet<Phong> Phongs { get; set; }
+        public DbSet<Room> Phongs { get; set; }
         public DbSet<CaLam> CaLams { get; set; }
         public DbSet<DangKyCaLam> DangKyCaLams { get; set; }
         public DbSet<BaoCaoPhong> BaoCaoPhongs { get; set; }
@@ -31,7 +31,7 @@ namespace WebApplication10.Models
             modelBuilder.Entity<NhanVien>().ToTable("NhanViens");
             modelBuilder.Entity<TaiKhoans>().ToTable("TaiKhoans");
 
-            modelBuilder.Entity<Phong>().ToTable("Phongs");
+            modelBuilder.Entity<Room>().ToTable("Phongs");
             modelBuilder.Entity<CaLam>().ToTable("CaLams");
             modelBuilder.Entity<DangKyCaLam>().ToTable("DangKyCaLams");
             modelBuilder.Entity<BaoCaoPhong>().ToTable("BaoCaoPhongs");
