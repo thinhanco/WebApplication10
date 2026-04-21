@@ -1,81 +1,75 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using WebApplication10.Models; // Đảm bảo đúng namespace Models của bạn
+using WebApplication10.Models;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization; // Phải có thư viện này
 
 namespace WebApplication10.Controllers
 {
+    // 1. Thêm cái này để ASP.NET tự bảo vệ trang, không cần dùng if(Session...) nữa
+    [Authorize(Roles = "NhanVien")]
     public class NhanVienController : Controller
     {
         private readonly QuanLyKhachSanDB _db;
 
-        // Tiêm Database vào Controller
         public NhanVienController(QuanLyKhachSanDB db)
         {
             _db = db;
         }
 
-        // --- TRANG CHỦ NHÂN VIÊN ---
+        // Hàm phụ để lấy MaNV từ Username trong Cookie (Viết 1 lần dùng cho nhiều action)
+        private int GetMaNV()
+        {
+            var userName = User.Identity?.Name;
+            // Tìm nhân viên trong DB dựa trên username
+            var nv = _db.Accounts.Include(a => a.UserProfile)
+                         .FirstOrDefault(a => a.Username == userName);
+            return nv?.AccountID ?? 0; // Trả về Id của Account hoặc Profile tùy DB bạn thiết kế
+        }
+
         public IActionResult Index()
         {
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
-            {
-                return RedirectToAction("Login", "Account");
-            }
-            ViewBag.HoTen = HttpContext.Session.GetString("UserName");
+            ViewBag.HoTen = User.Identity?.Name;
             return View();
         }
 
-        // --- CHỨC NĂNG 1: ĐẶT CA LÀM (SRS 3.2.3.1) ---
-        // --- CHỨC NĂNG 1: ĐẶT CA LÀM (SRS 3.2.3.1) ---
         public IActionResult DatCaLam()
         {
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
+            // THAY THẾ: Không dùng Session nữa
+            int maNV = GetMaNV();
+
+            if (maNV == 0)
             {
                 return RedirectToAction("Login", "Account");
             }
 
-            int maNV = HttpContext.Session.GetInt32("MaNV") ?? 0;
-
-            // 1. Lấy danh sách các loại ca (Sáng, Chiều, Tối)
             var loaiCas = _db.CaLams.ToList();
+            // ... (Giữ nguyên đoạn tính toán ngày tháng bên dưới)
 
-            // 2. Tính toán các ngày trong tuần hiện tại (Từ Thứ 2 đến Chủ Nhật)
             DateTime today = DateTime.Today;
             int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
             DateTime startOfWeek = today.AddDays(-1 * diff);
-
             List<DateTime> weekDays = new List<DateTime>();
-            for (int i = 0; i < 7; i++)
-            {
-                weekDays.Add(startOfWeek.AddDays(i));
-            }
-
+            for (int i = 0; i < 7; i++) { weekDays.Add(startOfWeek.AddDays(i)); }
             ViewBag.WeekDays = weekDays;
 
-            // Lấy danh sách ca đã đăng ký của nhân viên trong tuần này (để tô màu)
             var registered = _db.DangKyCaLams
                 .Where(x => x.MaNV == maNV
                          && x.NgayLam >= startOfWeek
                          && x.NgayLam <= weekDays.Last())
-                .Select(x => new
-                {
-                    MaCa = x.MaCa,
-                    NgayLam = x.NgayLam.ToString("yyyy-MM-dd")
-                })
+                .Select(x => new { MaCa = x.MaCa, NgayLam = x.NgayLam.ToString("yyyy-MM-dd") })
                 .ToList();
 
-            ViewBag.RegisteredShifts = registered;   // Dùng để tô màu trong View (giữ nguyên HTML cũ)
-
+            ViewBag.RegisteredShifts = registered;
             return View(loaiCas);
         }
 
         [HttpPost]
         public IActionResult DangKyCa(List<string> selectedShifts)
         {
-            int? maNV = HttpContext.Session.GetInt32("MaNV");
-            if (maNV == null) return RedirectToAction("Login", "Account");
+            int maNV = GetMaNV();
+            if (maNV == 0) return RedirectToAction("Login", "Account");
 
             if (selectedShifts == null || selectedShifts.Count == 0)
             {
@@ -83,66 +77,145 @@ namespace WebApplication10.Controllers
                 return RedirectToAction("DatCaLam");
             }
 
+            List<string> thongBaoLoi = new List<string>(); // Lưu danh sách các ca bị đầy
+
             foreach (var item in selectedShifts)
             {
-                // item có dạng "1|2026-04-06"
                 var parts = item.Split('|');
                 int maCa = int.Parse(parts[0]);
                 DateTime ngayLam = DateTime.Parse(parts[1]);
 
-                // Kiểm tra xem đã tồn tại chưa để tránh lỗi DB
+                // 1. LẤY THÔNG TIN CA LÀM (Để biết số lượng tối đa)
+                var caLam = _db.CaLams.Find(maCa);
+                if (caLam == null) continue;
+
+                // 2. ĐẾM SỐ NGƯỜI ĐÃ ĐĂNG KÝ TRONG NGÀY ĐÓ CHO CA ĐÓ
+                int soNguoiDaDangKy = _db.DangKyCaLams.Count(x => x.MaCa == maCa && x.NgayLam.Date == ngayLam.Date);
+
+                // 3. KIỂM TRA ĐÃ ĐĂNG KÝ CHƯA (Tránh trùng lặp cho chính NV đó)
                 bool daTonTai = _db.DangKyCaLams.Any(x => x.MaNV == maNV && x.MaCa == maCa && x.NgayLam.Date == ngayLam.Date);
 
-                if (!daTonTai)
+                if (daTonTai)
                 {
-                    var dangKy = new DangKyCaLam
-                    {
-                        MaNV = maNV.Value,
-                        MaCa = maCa,
-                        NgayLam = ngayLam.Date,
-                        TrangThai = "Pending"
-                    };
-                    _db.DangKyCaLams.Add(dangKy);
+                    continue; // Nếu NV này đã đăng ký rồi thì bỏ qua ca này
                 }
+
+                // 4. KIỂM TRA FULL SLOT
+                if (soNguoiDaDangKy >= caLam.SoLuongToiDa)
+                {
+                    // Nếu đã đầy, thêm vào danh sách lỗi để thông báo sau
+                    thongBaoLoi.Add($"Ca {caLam.TenCa} ngày {ngayLam.ToString("dd/MM")} đã đủ người ({caLam.SoLuongToiDa}/{caLam.SoLuongToiDa})");
+                    continue; // Bỏ qua không lưu ca này
+                }
+
+                // 5. NẾU CÒN CHỖ THÌ LƯU
+                var dangKy = new DangKyCaLam
+                {
+                    MaNV = maNV,
+                    MaCa = maCa,
+                    NgayLam = ngayLam.Date,
+                    TrangThai = "Pending"
+                };
+                _db.DangKyCaLams.Add(dangKy);
             }
 
             _db.SaveChanges();
-            TempData["SuccessMessage"] = "Đăng ký thành công các ca đã chọn!";
-            return RedirectToAction("DatCaLam");
-        }
-        // Thêm hàm này vào Controller
-        public IActionResult QuanLyPhong()
-        {
-            // Kiểm tra đăng nhập (giống các hàm khác)
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("UserName")))
+
+            // Xử lý thông báo trả về
+            if (thongBaoLoi.Any())
             {
-                return RedirectToAction("Login", "Account");
+                TempData["ErrorMessage"] = "Một số ca không thể đăng ký: " + string.Join(", ", thongBaoLoi);
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Đăng ký thành công!";
             }
 
-            // LẤY DỮ LIỆU TỪ SQL: Truy vấn danh sách tất cả các phòng
-            var danhSachPhong = _db.Phongs.ToList();
-
-            // TRẢ VỀ VIEW: Gửi danh sách phòng qua file QuanLyPhong.cshtml
-            return View(danhSachPhong);
+            return RedirectToAction("DatCaLam");
         }
+        public IActionResult QuanLyPhong(string searchString, RoomStatus? statusFilter)
+        {
+            // 1. Lấy tất cả danh sách dưới dạng IQueryable để lọc dần dần
+            var rooms = _db.Rooms.AsQueryable();
+
+            // 2. Tìm kiếm theo Số phòng (nếu người dùng nhập)
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                // Vì SoPhong là kiểu int, ta chuyển về string để tìm kiếm chứa (Contains)
+                // hoặc dùng == nếu muốn tìm chính xác số phòng
+                rooms = rooms.Where(r => r.SoPhong.ToString().Contains(searchString));
+            }
+
+            // 3. Lọc theo Trạng thái (nếu người dùng chọn)
+            if (statusFilter.HasValue)
+            {
+                rooms = rooms.Where(r => r.TrangThai == statusFilter.Value);
+            }
+
+            // Gửi lại giá trị tìm kiếm để hiển thị trên input sau khi Load lại trang
+            ViewBag.CurrentSearch = searchString;
+            ViewBag.CurrentStatus = statusFilter;
+
+            return View(rooms.ToList());
+        }
+
         [HttpPost]
         public IActionResult CapNhatTrangThaiPhong(int soPhong, string trangThaiMoi)
         {
-            var phong = _db.Phongs.Find(soPhong);
+            var phong = _db.Rooms.Find(soPhong);
             if (phong != null)
             {
-                phong.TrangThai = trangThaiMoi; // Ví dụ: Trống -> Đang dọn (SRS FR-RM-10)
+                // Ánh xạ từ chuỗi tiếng Việt nhận được từ giao diện sang Enum tiếng Anh trong Model
+                phong.TrangThai = trangThaiMoi switch
+                {
+                    "Trống" => RoomStatus.Available,
+                    "Đang ở" => RoomStatus.Occupied,
+                    "Đang dọn dẹp" => RoomStatus.Cleaning,
+                    "Bảo trì" => RoomStatus.Maintenance,
+                    _ => phong.TrangThai // Nếu không khớp cái nào thì giữ nguyên trạng thái cũ
+                };
+
                 _db.SaveChanges();
             }
             return RedirectToAction("QuanLyPhong");
         }
 
-        // --- CHỨC NĂNG 3: QUẢN LÝ KHÁCH HÀNG (SRS 3.2.3.3) ---
-        public IActionResult QuanLyKhachHang()
+        // Action 1: Trang duyệt đơn đặt phòng
+        public async Task<IActionResult> QuanLyKhachHang()
         {
-            // Hiển thị danh sách khách hàng đang chờ nhận phòng (Check-in)
-            // (Lưu ý: Cần bảng DatPhong trong Models)
-            return View();
+            // Phải có .Include để lấy thông tin khách hàng và phòng, nếu không KhachHang và Room sẽ bị NULL
+            var bookings = await _db.Bookings
+                .Include(b => b.KhachHang)
+                .Include(b => b.Room)
+                .OrderByDescending(b => b.NgayDat)
+                .ToListAsync();
+
+            return View(bookings); // <--- ĐẢM BẢO CÓ BIẾN bookings Ở ĐÂY
         }
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DuyetBooking(int id)
+        {
+            var booking = await _db.Bookings.FindAsync(id);
+            if (booking == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy đơn đặt phòng!";
+                return RedirectToAction("QuanLyKhachHang");
+            }
+
+            if (booking.TrangThaiDat == BookingStatus.ChoXacNhan)
+            {
+                booking.TrangThaiDat = BookingStatus.DaXacNhan;
+                _db.Update(booking);
+                await _db.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Đã duyệt thành công đơn hàng #{id}!";
+            }
+
+            return RedirectToAction("QuanLyKhachHang");
+        }
+
+
+        // Action 2: Trang quản lý phòng
+
     }
 }
