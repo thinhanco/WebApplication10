@@ -80,9 +80,22 @@
                                         }
                                     </td>
                                     <td class="p-3 text-center">
+                                        <!-- Nút Xem chi tiết (Cũ của bạn) -->
                                         <a href="@Url.Action("Details", "Booking", new { id = item.BookingID })" class="btn btn-sm btn-outline-dark">
                                             <i class="fas fa-eye"></i> Xem
                                         </a>
+
+                                        <!-- THÊM NÚT DUYỆT Ở ĐÂY -->
+                                        @if (item.TrangThaiDat == WebApplication10.Models.BookingStatus.ChoXacNhan)
+                                        {
+                                            <form asp-action="DuyetBooking" asp-controller="NhanVien" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn duyệt nhận phòng cho khách này?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@item.BookingID" />
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-check"></i> Duyệt
+                                                </button>
+                                            </form>
+                                        }
                                     </td>
                                 </tr>
                             }
