@@ -1,4 +1,5 @@
-@model IEnumerable<WebApplication10.Models.Room>
+@using WebApplication10.Models.ViewModels
+@model IEnumerable<QuanLyPhongViewModel>
 @{
     Layout = null;
 }
@@ -15,30 +16,19 @@
     <div class="d-flex">
         @await Html.PartialAsync("_SidebarNhanVien")
 
-        <!-- Đã bỏ w-100 và p-4 để file CSS chung tự động căn lề chuẩn với Sidebar -->
         <div class="main-content">
-            
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <!-- Sử dụng class page-title chuẩn -->
                 <h2 style="font-family: 'Playfair Display', serif; color: #d4af37;">Quản lý phòng</h2>
+                
                 <form asp-action="QuanLyPhong" method="get" class="d-flex search-container">
                     <div class="input-group shadow-sm">
                         <input type="text" name="searchString" value="@ViewBag.CurrentSearch"
                                class="form-control border-0" placeholder="Tìm số phòng...">
-                        <button class="btn btn-gold" type="submit">
-                            <i class="fas fa-search"></i>
-                        </button>
-                        @if (!string.IsNullOrEmpty(ViewBag.CurrentSearch))
-                        {
-                            <a asp-action="QuanLyPhong" class="btn btn-outline-secondary" style="border-radius: 0 8px 8px 0;">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        }
+                        <button class="btn btn-gold" type="submit"><i class="fas fa-search"></i></button>
                     </div>
                 </form>
             </div>
 
-            <!-- Sử dụng class table-container và custom-table từ file CSS -->
             <div class="table-container">
                 <table class="table custom-table mb-0">
                     <thead>
@@ -52,9 +42,7 @@
                     <tbody>
                         @if (!Model.Any())
                         {
-                            <tr>
-                                <td colspan="4" class="text-center py-5 text-muted">Không tìm thấy phòng phù hợp.</td>
-                            </tr>
+                            <tr><td colspan="4" class="text-center py-5 text-muted">Không tìm thấy phòng phù hợp.</td></tr>
                         }
                         @foreach (var p in Model)
                         {
@@ -62,25 +50,21 @@
                                 <td class="fw-bold">#@p.SoPhong</td>
                                 <td>@p.LoaiPhong</td>
                                 <td>
-                                    @{
-                                        string badgeClass = p.TrangThai.ToString() == "Available" ? "bg-success text-white" :
-                                                           (p.TrangThai.ToString() == "Occupied" ? "bg-danger text-white" : "bg-warning text-dark");
-                                        string statusName = p.TrangThai.ToString() == "Available" ? "Trống" :
-                                                           (p.TrangThai.ToString() == "Occupied" ? "Đang ở" :
-                                                           (p.TrangThai.ToString() == "Cleaning" ? "Dọn dẹp" : "Bảo trì"));
-                                    }
-                                    <span class="badge-status @badgeClass">@statusName</span>
+                                    <span class="badge-status @p.BadgeClass">@p.TrangThaiDisplay</span>
                                 </td>
                                 <td>
                                     <form action="/NhanVien/CapNhatTrangThaiPhong" method="post" class="d-flex align-items-center gap-2">
                                         <input type="hidden" name="soPhong" value="@p.SoPhong" />
-                                        <select name="trangThaiMoi" class="form-select form-select-sm border-0 bg-light" style="width:130px; font-size: 0.85rem; box-shadow: none;">
-                                            <option value="Trống">Trống</option>
-                                            <option value="Đang ở">Đang ở</option>
-                                            <option value="Đang dọn dẹp">Đang dọn dẹp</option>
-                                            <option value="Bảo trì">Bảo trì</option>
+                                        
+                                        <select name="trangThaiMoi" class="form-select form-select-sm border-0 bg-light" style="width:130px;">
+                                            <! -- Ở đây logic Selected cũng rất đơn giản -->
+                                            <option value="Trống" selected="@(p.TrangThaiDisplay == "Trống")">Trống</option>
+                                            <option value="Đang ở" selected="@(p.TrangThaiDisplay == "Đang ở")">Đang ở</option>
+                                            <option value="Đang dọn dẹp" selected="@(p.TrangThaiDisplay == "Đang dọn dẹp")">Đang dọn dẹp</option>
+                                            <option value="Bảo trì" selected="@(p.TrangThaiDisplay == "Bảo trì")">Bảo trì</option>
                                         </select>
-                                        <button type="submit" class="btn btn-sm text-white fw-bold" style="background:#d4af37; font-size: 0.8rem; padding: 4px 15px; border-radius: 6px;">Lưu</button>
+                                        
+                                        <button type="submit" class="btn btn-sm text-white fw-bold" style="background:#d4af37; padding: 4px 15px;">Lưu</button>
                                     </form>
                                 </td>
                             </tr>
@@ -88,7 +72,6 @@
                     </tbody>
                 </table>
             </div>
-            
         </div>
     </div>
 </body>
