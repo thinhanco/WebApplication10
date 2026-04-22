@@ -1,0 +1,21 @@
+namespace WebApplication10.Models.ViewModels
+{
+    public class ShiftItemViewModel
+    {
+        public int MaCa { get; set; }
+        public string TenCa { get; set; }
+        public string GioLam { get; set; }
+        public string NgayLamStr { get; set; }
+        public bool IsRegistered { get; set; }
+        public bool IsFull { get; set; }
+        public int CurrentCount { get; set; }
+        public int MaxCount { get; set; }
+    }
+
+    public class DatCaLamViewModel
+    {
+        public DateTime Date { get; set; }
+        public string DayOfWeekName { get; set; }
+        public List<ShiftItemViewModel> Shifts { get; set; }
+    }
+}
