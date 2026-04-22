@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using WebApplication10.Models;
 using System.Linq;
-using Microsoft.AspNetCore.Authorization; // Phải có thư viện này
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace WebApplication10.Controllers
 {
-    // 1. Thêm cái này để ASP.NET tự bảo vệ trang, không cần dùng if(Session...) nữa
     [Authorize(Roles = "NhanVien")]
     public class NhanVienController : Controller
     {
@@ -18,14 +20,21 @@ namespace WebApplication10.Controllers
             _db = db;
         }
 
-        // Hàm phụ để lấy MaNV từ Username trong Cookie (Viết 1 lần dùng cho nhiều action)
         private int GetMaNV()
         {
+            // Lấy Username của người đang đăng nhập từ Cookie
             var userName = User.Identity?.Name;
-            // Tìm nhân viên trong DB dựa trên username
-            var nv = _db.Accounts.Include(a => a.UserProfile)
-                         .FirstOrDefault(a => a.Username == userName);
-            return nv?.AccountID ?? 0; // Trả về Id của Account hoặc Profile tùy DB bạn thiết kế
+            if (string.IsNullOrEmpty(userName)) return 0;
+
+            // 1. Tìm Account dựa trên Username
+            var account = _db.Accounts.FirstOrDefault(a => a.Username == userName);
+            if (account == null) return 0;
+
+            // 2. Tìm Nhân viên dựa trên AccountID vừa lấy được
+            var nhanVien = _db.NhanViens.FirstOrDefault(nv => nv.AccountID == account.AccountID);
+
+            // 3. Trả về đúng MaNV của bảng NhanViens
+            return nhanVien?.MaNV ?? 0;
         }
 
         public IActionResult Index()
@@ -36,7 +45,6 @@ namespace WebApplication10.Controllers
 
         public IActionResult DatCaLam()
         {
-            // THAY THẾ: Không dùng Session nữa
             int maNV = GetMaNV();
 
             if (maNV == 0)
@@ -45,7 +53,6 @@ namespace WebApplication10.Controllers
             }
 
             var loaiCas = _db.CaLams.ToList();
-            // ... (Giữ nguyên đoạn tính toán ngày tháng bên dưới)
 
             DateTime today = DateTime.Today;
             int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
@@ -62,9 +69,26 @@ namespace WebApplication10.Controllers
                 .ToList();
 
             ViewBag.RegisteredShifts = registered;
+            // Đếm số người đã đăng ký cho từng ca trong tuần hiện tại
+            var shiftCounts = _db.DangKyCaLams
+                .Where(x => x.NgayLam >= startOfWeek && x.NgayLam <= weekDays.Last())
+                // Nhóm theo Mã Ca và Ngày Làm
+                .GroupBy(x => new { x.MaCa, x.NgayLam.Date })
+                .Select(g => new {
+                    // Tạo một Key độc nhất (Ví dụ: "1_2024-04-20")
+                    Key = g.Key.MaCa + "_" + g.Key.Date.ToString("yyyy-MM-dd"),
+                    Count = g.Count()
+                })
+                // Chuyển thành Dictionary để ngoài View tra cứu cho nhanh
+                .ToDictionary(x => x.Key, x => x.Count);
+
+            ViewBag.ShiftCounts = shiftCounts;
             return View(loaiCas);
         }
 
+        // ==========================================
+        // ĐÃ CẬP NHẬT LOGIC ĐĂNG KÝ CA LÀM
+        // ==========================================
         [HttpPost]
         public IActionResult DangKyCa(List<string> selectedShifts)
         {
@@ -77,54 +101,87 @@ namespace WebApplication10.Controllers
                 return RedirectToAction("DatCaLam");
             }
 
-            List<string> thongBaoLoi = new List<string>(); // Lưu danh sách các ca bị đầy
+            List<string> thongBaoLoi = new List<string>();
+            List<DangKyCaLam> validNewShifts = new List<DangKyCaLam>(); // Chứa các ca hợp lệ chuẩn bị lưu
+            Dictionary<DateTime, int> shiftsPerDay = new Dictionary<DateTime, int>(); // Đếm số ca theo ngày
+
+            // Xác định Tuần hiện tại (dựa vào ca đầu tiên user gửi lên)
+            var firstShiftDate = DateTime.Parse(selectedShifts.First().Split('|')[1]).Date;
+            int diff = (7 + (firstShiftDate.DayOfWeek - DayOfWeek.Monday)) % 7;
+            DateTime startOfWeek = firstShiftDate.AddDays(-1 * diff);
+            DateTime endOfWeek = startOfWeek.AddDays(6);
 
             foreach (var item in selectedShifts)
             {
                 var parts = item.Split('|');
                 int maCa = int.Parse(parts[0]);
-                DateTime ngayLam = DateTime.Parse(parts[1]);
+                DateTime ngayLam = DateTime.Parse(parts[1]).Date;
 
-                // 1. LẤY THÔNG TIN CA LÀM (Để biết số lượng tối đa)
                 var caLam = _db.CaLams.Find(maCa);
                 if (caLam == null) continue;
 
-                // 2. ĐẾM SỐ NGƯỜI ĐÃ ĐĂNG KÝ TRONG NGÀY ĐÓ CHO CA ĐÓ
-                int soNguoiDaDangKy = _db.DangKyCaLams.Count(x => x.MaCa == maCa && x.NgayLam.Date == ngayLam.Date);
+                // 1. Kiểm tra NV này đã đăng ký ca này vào ngày này chưa?
+                bool daTonTai = _db.DangKyCaLams.Any(x => x.MaNV == maNV && x.MaCa == maCa && x.NgayLam.Date == ngayLam);
+                if (daTonTai) continue;
 
-                // 3. KIỂM TRA ĐÃ ĐĂNG KÝ CHƯA (Tránh trùng lặp cho chính NV đó)
-                bool daTonTai = _db.DangKyCaLams.Any(x => x.MaNV == maNV && x.MaCa == maCa && x.NgayLam.Date == ngayLam.Date);
-
-                if (daTonTai)
+                // 2. Kiểm tra giới hạn: 1 ngày KHÔNG ĐƯỢC QUÁ 2 CA
+                if (!shiftsPerDay.ContainsKey(ngayLam))
                 {
-                    continue; // Nếu NV này đã đăng ký rồi thì bỏ qua ca này
+                    // Lấy số ca đã đăng ký trước đó trong DB của ngày này
+                    shiftsPerDay[ngayLam] = _db.DangKyCaLams.Count(x => x.MaNV == maNV && x.NgayLam.Date == ngayLam);
                 }
 
-                // 4. KIỂM TRA FULL SLOT
-                if (soNguoiDaDangKy >= caLam.SoLuongToiDa)
+                if (shiftsPerDay[ngayLam] >= 2)
                 {
-                    // Nếu đã đầy, thêm vào danh sách lỗi để thông báo sau
-                    thongBaoLoi.Add($"Ca {caLam.TenCa} ngày {ngayLam.ToString("dd/MM")} đã đủ người ({caLam.SoLuongToiDa}/{caLam.SoLuongToiDa})");
+                    thongBaoLoi.Add($"Ngày {ngayLam:dd/MM} không được đăng ký quá 2 ca.");
                     continue; // Bỏ qua không lưu ca này
                 }
 
-                // 5. NẾU CÒN CHỖ THÌ LƯU
+                // 3. Kiểm tra Full Slot
+                int soNguoiDaDangKy = _db.DangKyCaLams.Count(x => x.MaCa == maCa && x.NgayLam.Date == ngayLam);
+                if (soNguoiDaDangKy >= caLam.SoLuongToiDa)
+                {
+                    thongBaoLoi.Add($"Ca {caLam.TenCa} ngày {ngayLam:dd/MM} đã đủ người.");
+                    continue;
+                }
+
+                // Nếu thỏa mãn tất cả -> Thêm vào danh sách chờ lưu và tăng biến đếm ngày lên 1
                 var dangKy = new DangKyCaLam
                 {
                     MaNV = maNV,
                     MaCa = maCa,
-                    NgayLam = ngayLam.Date,
+                    NgayLam = ngayLam,
                     TrangThai = "Pending"
                 };
-                _db.DangKyCaLams.Add(dangKy);
+                validNewShifts.Add(dangKy);
+                shiftsPerDay[ngayLam]++;
             }
 
-            _db.SaveChanges();
+            // 4. KIỂM TRA ĐIỀU KIỆN TUẦN: PHẢI CÓ ÍT NHẤT 7 CA / TUẦN
+            // Tổng số ca = Số ca đã có sẵn trong tuần + Số ca hợp lệ vừa chọn
+            int soCaDaCoTrongTuan = _db.DangKyCaLams.Count(x => x.MaNV == maNV && x.NgayLam >= startOfWeek && x.NgayLam <= endOfWeek);
+            int tongSoCaTuanNay = soCaDaCoTrongTuan + validNewShifts.Count;
 
-            // Xử lý thông báo trả về
+            if (tongSoCaTuanNay < 7)
+            {
+                // Báo lỗi và HUỶ BỎ TOÀN BỘ thao tác (không SaveChanges)
+                string errorDetail = thongBaoLoi.Any() ? " (Một số ca bạn chọn bị loại vì: " + string.Join(", ", thongBaoLoi) + ")" : "";
+                TempData["ErrorMessage"] = $"Đăng ký thất bại! Yêu cầu đăng ký tối thiểu 7 ca/tuần. Tổng số ca hiện tại của bạn trong tuần mới đạt {tongSoCaTuanNay}/7 ca.{errorDetail}";
+
+                return RedirectToAction("DatCaLam");
+            }
+
+            // 5. Nếu đủ số ca (>= 7), tiến hành lưu các ca hợp lệ vào Database
+            if (validNewShifts.Any())
+            {
+                _db.DangKyCaLams.AddRange(validNewShifts);
+                _db.SaveChanges();
+            }
+
+            // Trả thông báo
             if (thongBaoLoi.Any())
             {
-                TempData["ErrorMessage"] = "Một số ca không thể đăng ký: " + string.Join(", ", thongBaoLoi);
+                TempData["SuccessMessage"] = "Đăng ký thành công! Nhưng có vài cảnh báo: " + string.Join(", ", thongBaoLoi);
             }
             else
             {
@@ -133,26 +190,21 @@ namespace WebApplication10.Controllers
 
             return RedirectToAction("DatCaLam");
         }
+
         public IActionResult QuanLyPhong(string searchString, RoomStatus? statusFilter)
         {
-            // 1. Lấy tất cả danh sách dưới dạng IQueryable để lọc dần dần
             var rooms = _db.Rooms.AsQueryable();
 
-            // 2. Tìm kiếm theo Số phòng (nếu người dùng nhập)
             if (!string.IsNullOrEmpty(searchString))
             {
-                // Vì SoPhong là kiểu int, ta chuyển về string để tìm kiếm chứa (Contains)
-                // hoặc dùng == nếu muốn tìm chính xác số phòng
                 rooms = rooms.Where(r => r.SoPhong.ToString().Contains(searchString));
             }
 
-            // 3. Lọc theo Trạng thái (nếu người dùng chọn)
             if (statusFilter.HasValue)
             {
                 rooms = rooms.Where(r => r.TrangThai == statusFilter.Value);
             }
 
-            // Gửi lại giá trị tìm kiếm để hiển thị trên input sau khi Load lại trang
             ViewBag.CurrentSearch = searchString;
             ViewBag.CurrentStatus = statusFilter;
 
@@ -165,14 +217,13 @@ namespace WebApplication10.Controllers
             var phong = _db.Rooms.Find(soPhong);
             if (phong != null)
             {
-                // Ánh xạ từ chuỗi tiếng Việt nhận được từ giao diện sang Enum tiếng Anh trong Model
                 phong.TrangThai = trangThaiMoi switch
                 {
                     "Trống" => RoomStatus.Available,
                     "Đang ở" => RoomStatus.Occupied,
                     "Đang dọn dẹp" => RoomStatus.Cleaning,
                     "Bảo trì" => RoomStatus.Maintenance,
-                    _ => phong.TrangThai // Nếu không khớp cái nào thì giữ nguyên trạng thái cũ
+                    _ => phong.TrangThai
                 };
 
                 _db.SaveChanges();
@@ -180,18 +231,17 @@ namespace WebApplication10.Controllers
             return RedirectToAction("QuanLyPhong");
         }
 
-        // Action 1: Trang duyệt đơn đặt phòng
         public async Task<IActionResult> QuanLyKhachHang()
         {
-            // Phải có .Include để lấy thông tin khách hàng và phòng, nếu không KhachHang và Room sẽ bị NULL
             var bookings = await _db.Bookings
                 .Include(b => b.KhachHang)
                 .Include(b => b.Room)
                 .OrderByDescending(b => b.NgayDat)
                 .ToListAsync();
 
-            return View(bookings); // <--- ĐẢM BẢO CÓ BIẾN bookings Ở ĐÂY
+            return View(bookings);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DuyetBooking(int id)
@@ -213,9 +263,5 @@ namespace WebApplication10.Controllers
 
             return RedirectToAction("QuanLyKhachHang");
         }
-
-
-        // Action 2: Trang quản lý phòng
-
     }
 }
