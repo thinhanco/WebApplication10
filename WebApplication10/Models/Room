@@ -1,0 +1,80 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+namespace WebApplication10.Models
+{
+    public enum RoomType
+    {
+        [Display(Name = "Phòng Tiêu Chuẩn")]
+        Standard,
+
+        [Display(Name = "Phòng Sang Trọng")]
+        Deluxe,
+
+        [Display(Name = "Phòng Tổng Thống")]
+        Suite
+    }
+
+    public enum RoomStatus
+    {
+        [Display(Name = "Trống")]
+        Available,
+
+        [Display(Name = "Đang ở")]
+        Occupied,
+
+        [Display(Name = "Đang dọn dẹp")]
+        Cleaning,
+
+        [Display(Name = "Bảo trì")]
+        Maintenance
+    }
+    public class Room
+    {
+        [Key]
+
+        [Required(ErrorMessage = "Số phòng không được để trống")]
+        public int SoPhong { get; set; }
+
+        [Required(ErrorMessage = "Loại phòng là bắt buộc")]
+        [MaxLength(50)]
+        [Display(Name = "Loại phòng")]
+        public RoomType LoaiPhong { get; set; }
+
+        [Required(ErrorMessage = "Trạng thái là bắt buộc")]
+        [MaxLength(20)]
+        [Display(Name = "Trạng thái")]
+        public RoomStatus TrangThai { get; set; }
+
+        [Required(ErrorMessage = "Số lượng người ở là bắt buộc")]
+        [Range(1, 20, ErrorMessage = "Số người ở phải nằm trong khoảng từ 1 đến 20")] // Giới hạn thực tế cho một phòng
+        [Display(Name = "Sức chứa (người)")]
+        public int Size { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal GiaPhong { get; set; }
+
+        public decimal TinhGiaDeXuat()
+        {
+            decimal giaGoc = 0;
+
+            // 1. Định giá gốc theo loại phòng
+            switch (LoaiPhong)
+            {
+                case RoomType.Standard: giaGoc = 500000; break;
+                case RoomType.Deluxe: giaGoc = 800000; break;
+                case RoomType.Suite: giaGoc = 1500000; break;
+                default: giaGoc = 500000; break;
+            }
+
+            // 2. Phụ thu theo kích thước (Ví dụ: Từ người thứ 2 trở lên, mỗi người cộng thêm 200k)
+            if (Size > 1)
+            {
+                decimal phuThu = (Size - 1) * 200000;
+                giaGoc += phuThu;
+            }
+
+            return giaGoc;
+        }
+        public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    }
+}
