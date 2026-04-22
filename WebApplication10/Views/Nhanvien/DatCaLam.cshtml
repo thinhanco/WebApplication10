@@ -1,4 +1,4 @@
-@model IEnumerable<WebApplication10.Models.CaLam>
+@model IEnumerable<WebApplication10.Models.ViewModels.DayScheduleViewModel>
 @{
     Layout = null;
 }
@@ -11,8 +11,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
    
-    <!-- THÊM CSS CHO CA BỊ ĐẦY -->
-   
+    <style>
+            /* CSS cho ca bị đầy - Giúp làm mờ và chặn click */
+            .shift-full {
+                opacity: 0.6;
+                cursor: not-allowed !important;
+            }
+
+                .shift-full .shift-card {
+                    background-color: #fff5f5;
+                    border-color: #ffcdd2 !important;
+                }
+
+                .shift-full input {
+                    pointer-events: none;
+                }
+
+            .shift-status {
+                font-size: 11px;
+                margin-top: 5px;
+            }
+    </style>
 </head>
 <body>
     <div class="d-flex">
@@ -37,64 +56,46 @@
                     <table class="table mb-0">
                         <thead>
                             <tr>
-                                @foreach (DateTime day in ViewBag.WeekDays)
+                                <!-- SỬA LỖI TẠI ĐÂY: Dùng Model thay vì ViewBag -->
+                                @foreach (var day in Model)
                                 {
                                     <th>
-                                        <span class="day-label">@day.ToString("dddd")</span>
-                                        <span class="date-label">@day.ToString("dd/MM")</span>
+                                        <span class="day-label">@day.DayOfWeekName</span>
+                                        <span class="date-label">@day.Date.ToString("dd/MM")</span>
                                     </th>
                                 }
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                @foreach (DateTime day in ViewBag.WeekDays)
+                                @foreach (var day in Model)
                                 {
                                     <td>
-                                        @foreach (var shift in Model)
+                                        @foreach (var shift in day.Shifts)
                                         {
-                                            var dayStr = day.ToString("yyyy-MM-dd");
-                                            
-                                            // 1. Kiểm tra NV đã đăng ký chưa
-                                            bool isRegistered = ((IEnumerable<dynamic>)ViewBag.RegisteredShifts)
-                                                                .Any(r => r.MaCa == shift.MaCa && r.NgayLam == dayStr);
-
-                                            // 2. Lấy số lượng người đã đăng ký từ ViewBag
-                                            string shiftKey = $"{shift.MaCa}_{dayStr}";
-                                            var dictCounts = ViewBag.ShiftCounts as Dictionary<string, int>;
-                                            int currentCount = (dictCounts != null && dictCounts.ContainsKey(shiftKey)) ? dictCounts[shiftKey] : 0;
-                                            
-                                            // 3. Kiểm tra xem ca đã Full chưa
-                                            bool isFull = currentCount >= shift.SoLuongToiDa;
-
-                                            // 4. Nếu Full mà NV chưa đăng ký thì mới khóa mờ
-                                            string labelClass = (isFull && !isRegistered) ? "shift-full" : "";
-                                            string inputDisabled = (isRegistered || isFull) ? "disabled" : "";
-                                            string inputChecked = isRegistered ? "checked" : "";
-
-                                            <label class="w-100 @labelClass">
+                                            <label class="w-100 @(shift.IsFull && !shift.IsRegistered ? "shift-full" : "")">
                                                 <input type="checkbox" name="selectedShifts"
-                                                       value="@(shift.MaCa)|@(dayStr)"
+                                                       value="@shift.MaCa|@shift.NgayLamStr"
                                                        class="shift-checkbox"
-                                                @inputChecked @inputDisabled>
-                                                
+                                                @(shift.IsRegistered ? "checked" : "")
+                                                @(shift.IsRegistered || shift.IsFull ? "disabled" : "")>
+                                    
                                                 <div class="shift-card">
                                                     <span class="shift-name d-block fw-bold">@shift.TenCa</span>
-                                                    <span class="shift-time d-block small">@shift.GioBatDau.ToString(@"hh\:mm") - @shift.GioKetThuc.ToString(@"hh\:mm")</span>
-                                                    
-                                                    <!-- HIỂN THỊ TRẠNG THÁI SỐ LƯỢNG -->
+                                                    <span class="shift-time d-block small">@shift.GioLam</span>
+                                        
                                                     <div class="shift-status">
-                                                        @if (isRegistered)
+                                                        @if (shift.IsRegistered)
                                                         {
                                                             <span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Của bạn</span>
                                                         }
-                                                        else if (isFull)
+                                                        else if (shift.IsFull)
                                                         {
-                                                            <span class="text-danger fw-bold"><i class="fas fa-lock"></i> Đã đầy (@currentCount/@shift.SoLuongToiDa)</span>
+                                                            <span class="text-danger fw-bold"><i class="fas fa-lock"></i> Đã đầy (@shift.CurrentCount/@shift.MaxCount)</span>
                                                         }
                                                         else
                                                         {
-                                                            <span class="text-muted"><i class="fas fa-user"></i> Trống (@currentCount/@shift.SoLuongToiDa)</span>
+                                                            <span class="text-muted"><i class="fas fa-user"></i> Trống (@shift.CurrentCount/@shift.MaxCount)</span>
                                                         }
                                                     </div>
                                                 </div>
