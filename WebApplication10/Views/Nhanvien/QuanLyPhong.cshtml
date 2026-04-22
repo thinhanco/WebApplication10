@@ -1,4 +1,4 @@
-﻿@model IEnumerable<WebApplication10.Models.Phong>
+@model IEnumerable<WebApplication10.Models.Room>
 @{
     Layout = null;
 }
@@ -9,42 +9,78 @@
     <title>Quản Lý Phòng - Lumina Hotel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    @await Html.PartialAsync("_SidebarStyles")
+    <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
 </head>
 <body>
     <div class="d-flex">
         @await Html.PartialAsync("_SidebarNhanVien")
 
+        <!-- Đã bỏ w-100 và p-4 để file CSS chung tự động căn lề chuẩn với Sidebar -->
         <div class="main-content">
-            <h2 style="font-family: 'Playfair Display', serif; color: #d4af37; margin-bottom: 30px;">Quản Lý Trạng Thái Phòng</h2>
-            <div class="table-container p-0">
-                <table class="table table-hover mb-0">
-                    <thead style="background: #1a252f; color: #d4af37;">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <!-- Sử dụng class page-title chuẩn -->
+                <h2 style="font-family: 'Playfair Display', serif; color: #d4af37;">Quản lý phòng</h2>
+                <form asp-action="QuanLyPhong" method="get" class="d-flex search-container">
+                    <div class="input-group shadow-sm">
+                        <input type="text" name="searchString" value="@ViewBag.CurrentSearch"
+                               class="form-control border-0" placeholder="Tìm số phòng...">
+                        <button class="btn btn-gold" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        @if (!string.IsNullOrEmpty(ViewBag.CurrentSearch))
+                        {
+                            <a asp-action="QuanLyPhong" class="btn btn-outline-secondary" style="border-radius: 0 8px 8px 0;">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        }
+                    </div>
+                </form>
+            </div>
+
+            <!-- Sử dụng class table-container và custom-table từ file CSS -->
+            <div class="table-container">
+                <table class="table custom-table mb-0">
+                    <thead>
                         <tr>
-                            <th class="p-3">SỐ PHÒNG</th>
-                            <th class="p-3">LOẠI PHÒNG</th>
-                            <th class="p-3">TRẠNG THÁI</th>
-                            <th class="p-3">THAO TÁC</th>
+                            <th>SỐ PHÒNG</th>
+                            <th>LOẠI PHÒNG</th>
+                            <th>TRẠNG THÁI</th>
+                            <th>THAO TÁC</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">Không tìm thấy phòng phù hợp.</td>
+                            </tr>
+                        }
                         @foreach (var p in Model)
                         {
                             <tr>
-                                <td class="p-3 fw-bold">#@p.SoPhong</td>
-                                <td class="p-3">@p.LoaiPhong</td>
-                                <td class="p-3">
-                                    <span class="badge @(p.TrangThai == "Trống" ? "bg-success" : "bg-danger")">@p.TrangThai</span>
+                                <td class="fw-bold">#@p.SoPhong</td>
+                                <td>@p.LoaiPhong</td>
+                                <td>
+                                    @{
+                                        string badgeClass = p.TrangThai.ToString() == "Available" ? "bg-success text-white" :
+                                                           (p.TrangThai.ToString() == "Occupied" ? "bg-danger text-white" : "bg-warning text-dark");
+                                        string statusName = p.TrangThai.ToString() == "Available" ? "Trống" :
+                                                           (p.TrangThai.ToString() == "Occupied" ? "Đang ở" :
+                                                           (p.TrangThai.ToString() == "Cleaning" ? "Dọn dẹp" : "Bảo trì"));
+                                    }
+                                    <span class="badge-status @badgeClass">@statusName</span>
                                 </td>
-                                <td class="p-3">
-                                    <form action="/NhanVien/CapNhatTrangThaiPhong" method="post" class="d-flex gap-2">
+                                <td>
+                                    <form action="/NhanVien/CapNhatTrangThaiPhong" method="post" class="d-flex align-items-center gap-2">
                                         <input type="hidden" name="soPhong" value="@p.SoPhong" />
-                                        <select name="trangThaiMoi" class="form-select form-select-sm" style="width:120px">
+                                        <select name="trangThaiMoi" class="form-select form-select-sm border-0 bg-light" style="width:130px; font-size: 0.85rem; box-shadow: none;">
                                             <option value="Trống">Trống</option>
                                             <option value="Đang ở">Đang ở</option>
-                                            <option value="Đang dọn">Đang dọn</option>
+                                            <option value="Đang dọn dẹp">Đang dọn dẹp</option>
+                                            <option value="Bảo trì">Bảo trì</option>
                                         </select>
-                                        <button type="submit" class="btn btn-sm" style="background:#d4af37; color:white;">Lưu</button>
+                                        <button type="submit" class="btn btn-sm text-white fw-bold" style="background:#d4af37; font-size: 0.8rem; padding: 4px 15px; border-radius: 6px;">Lưu</button>
                                     </form>
                                 </td>
                             </tr>
@@ -52,6 +88,7 @@
                     </tbody>
                 </table>
             </div>
+            
         </div>
     </div>
 </body>
