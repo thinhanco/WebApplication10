@@ -1,4 +1,4 @@
-@model IEnumerable<WebApplication10.Models.Booking>
+@model IEnumerable<WebApplication10.Models.ViewModels.QuanLyKhachHangViewModel>
 @{
     Layout = null;
 }
@@ -54,41 +54,28 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model != null && Model.Any())
+                        @if (Model.Any())
                         {
                             foreach (var item in Model)
                             {
                                 <tr>
                                     <td class="p-3">
-                                        <div class="fw-bold">@(item.KhachHang?.Hoten ?? "N/A")</div>
-                                        <small class="text-muted">@item.KhachHang?.sđt</small>
+                                        <div class="fw-bold">@item.TenKhachHang</div>
+                                        <small class="text-muted">@item.SoDienThoai</small>
                                     </td>
                                     <td class="p-3 text-center">#@item.SoPhong</td>
-                                    <td class="p-3">@item.CheckIn.ToString("dd/MM/yyyy")</td>
+                                    <td class="p-3">@item.NgayDen</td>
                                     <td class="p-3">
-                                        @if (item.TrangThaiDat == WebApplication10.Models.BookingStatus.ChoXacNhan)
-                                        {
-                                            <span class="badge bg-warning text-dark">Chờ nhận phòng</span>
-                                        }
-                                        else if (item.TrangThaiDat == WebApplication10.Models.BookingStatus.DaXacNhan)
-                                        {
-                                            <span class="badge bg-success">Đã nhận phòng</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Khác</span>
-                                        }
+                                        <span class="badge @item.BadgeClass">@item.TrangThaiHienThi</span>
                                     </td>
                                     <td class="p-3 text-center">
-                                        <!-- Nút Xem chi tiết (Cũ của bạn) -->
                                         <a href="@Url.Action("Details", "Booking", new { id = item.BookingID })" class="btn btn-sm btn-outline-dark">
                                             <i class="fas fa-eye"></i> Xem
                                         </a>
 
-                                        <!-- THÊM NÚT DUYỆT Ở ĐÂY -->
-                                        @if (item.TrangThaiDat == WebApplication10.Models.BookingStatus.ChoXacNhan)
+                                        @if (item.ChoPhepDuyet)
                                         {
-                                            <form asp-action="DuyetBooking" asp-controller="NhanVien" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn duyệt nhận phòng cho khách này?')">
+                                            <form asp-action="DuyetBooking" asp-controller="NhanVien" method="post" style="display:inline;" onsubmit="return confirm('Xác nhận duyệt?')">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="id" value="@item.BookingID" />
                                                 <button type="submit" class="btn btn-sm btn-success">
@@ -100,12 +87,7 @@
                                 </tr>
                             }
                         }
-                        else
-                        {
-                            <tr>
-                                <td colspan="5" class="text-center p-4 text-muted">Không có dữ liệu khách hàng nào.</td>
-                            </tr>
-                        }
+                        else { /* Thông báo trống */ }
                     </tbody>
                 </table>
             </div>
