@@ -1,5 +1,7 @@
 @model IEnumerable<WebApplication10.Models.CaLam>
-@{ Layout = null; }
+@{
+    Layout = null;
+}
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,6 +10,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
+   
+    <!-- THÊM CSS CHO CA BỊ ĐẦY -->
    
 </head>
 <body>
@@ -19,14 +23,15 @@
 
             <h2 style="font-family: 'Playfair Display', serif; color: #d4af37;">Đăng Ký Lịch Làm Tuần Này</h2>
             
-            @if (TempData["SuccessMessage"] != null) {
+            @if (TempData["SuccessMessage"] != null)
+            {
                 <div class="alert alert-success">@TempData["SuccessMessage"]</div>
             }
-            @if (TempData["ErrorMessage"] != null) {
+            @if (TempData["ErrorMessage"] != null)
+            {
                 <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
             }
 
-            <!-- SỬA LỖI 1: Đổi action về đúng tên "DangKyCa" -->
             <form asp-action="DangKyCa" asp-controller="NhanVien" method="post">
                 <div class="schedule-table table-responsive">
                     <table class="table mb-0">
@@ -48,20 +53,50 @@
                                     <td>
                                         @foreach (var shift in Model)
                                         {
-                                            // SỬA LỖI 3: Kiểm tra xem ca này đã được đăng ký chưa
                                             var dayStr = day.ToString("yyyy-MM-dd");
+                                            
+                                            // 1. Kiểm tra NV đã đăng ký chưa
                                             bool isRegistered = ((IEnumerable<dynamic>)ViewBag.RegisteredShifts)
                                                                 .Any(r => r.MaCa == shift.MaCa && r.NgayLam == dayStr);
 
-                                            <label class="w-100">
-                                                <!-- SỬA LỖI 2: Dùng dấu gạch đứng | để khớp với Split('|') trong Controller -->
-                                                <input type="checkbox" name="selectedShifts" 
-                                                       value="@(shift.MaCa)|@(dayStr)" 
+                                            // 2. Lấy số lượng người đã đăng ký từ ViewBag
+                                            string shiftKey = $"{shift.MaCa}_{dayStr}";
+                                            var dictCounts = ViewBag.ShiftCounts as Dictionary<string, int>;
+                                            int currentCount = (dictCounts != null && dictCounts.ContainsKey(shiftKey)) ? dictCounts[shiftKey] : 0;
+                                            
+                                            // 3. Kiểm tra xem ca đã Full chưa
+                                            bool isFull = currentCount >= shift.SoLuongToiDa;
+
+                                            // 4. Nếu Full mà NV chưa đăng ký thì mới khóa mờ
+                                            string labelClass = (isFull && !isRegistered) ? "shift-full" : "";
+                                            string inputDisabled = (isRegistered || isFull) ? "disabled" : "";
+                                            string inputChecked = isRegistered ? "checked" : "";
+
+                                            <label class="w-100 @labelClass">
+                                                <input type="checkbox" name="selectedShifts"
+                                                       value="@(shift.MaCa)|@(dayStr)"
                                                        class="shift-checkbox"
-                                                       @(isRegistered ? "checked disabled" : "")>
+                                                @inputChecked @inputDisabled>
+                                                
                                                 <div class="shift-card">
                                                     <span class="shift-name d-block fw-bold">@shift.TenCa</span>
                                                     <span class="shift-time d-block small">@shift.GioBatDau.ToString(@"hh\:mm") - @shift.GioKetThuc.ToString(@"hh\:mm")</span>
+                                                    
+                                                    <!-- HIỂN THỊ TRẠNG THÁI SỐ LƯỢNG -->
+                                                    <div class="shift-status">
+                                                        @if (isRegistered)
+                                                        {
+                                                            <span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Của bạn</span>
+                                                        }
+                                                        else if (isFull)
+                                                        {
+                                                            <span class="text-danger fw-bold"><i class="fas fa-lock"></i> Đã đầy (@currentCount/@shift.SoLuongToiDa)</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted"><i class="fas fa-user"></i> Trống (@currentCount/@shift.SoLuongToiDa)</span>
+                                                        }
+                                                    </div>
                                                 </div>
                                             </label>
                                         }
@@ -73,7 +108,7 @@
                 </div>
 
                 <div class="text-center mt-4">
-                    <button type="submit" class="btn btn-primary px-5 py-2">XÁC NHẬN ĐĂNG KÝ</button>
+                    <button type="submit" class="btn btn-primary px-5 py-2" style="background-color: #d4af37; border-color: #d4af37;">XÁC NHẬN ĐĂNG KÝ</button>
                 </div>
             </form>
         </div>
