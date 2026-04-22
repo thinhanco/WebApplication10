@@ -1,79 +1,20 @@
-﻿@{ Layout = null; }
+@{
+    Layout = null;
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <title>Tổng Quan Nhân Viên - Lumina Hotel</title>
     <!-- Bootstrap & Google Fonts -->
+    <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     
     <!-- GỌI CSS DÙNG CHUNG (Để Sidebar và Font được đồng bộ) -->
-    @await Html.PartialAsync("_SidebarStyles")
 
-    <style>
-        /* Đảm bảo tiêu đề trang này giống hệt trang Đặt Ca */
-        .page-title {
-            font-family: 'Playfair Display', serif;
-            color: var(--primary-gold);
-            font-size: 2.2rem;
-            margin-bottom: 40px;
-        }
-
-        .user-welcome {
-            background: white;
-            padding: 8px 20px;
-            border-radius: 50px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            font-size: 0.9rem;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        /* Tùy chỉnh card để sang trọng hơn */
-        .uc-card {
-            background: white;
-            border-radius: 15px;
-            padding: 35px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border-top: 5px solid var(--primary-gold);
-            transition: 0.3s;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        .uc-card:hover { transform: translateY(-10px); }
-        
-        .uc-card h3 { 
-            font-family: 'Playfair Display', serif; 
-            font-size: 1.5rem; 
-            margin: 20px 0;
-        }
-
-        .uc-card p { 
-            font-family: 'Poppins', sans-serif;
-            color: #666;
-            font-size: 0.85rem;
-            line-height: 1.6;
-            margin-bottom: 25px;
-        }
-
-        .btn-gold-action {
-            background: var(--primary-gold);
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 8px;
-            font-weight: 600;
-            text-decoration: none;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-            margin-top: auto;
-            transition: 0.3s;
-        }
-        .btn-gold-action:hover { background: #b5952f; color: white; }
-    </style>
+    
 </head>
 <body>
     <div class="d-flex">
@@ -92,33 +33,33 @@
             </div>
 
             <div class="row g-4">
-                <!-- Chức năng Đặt Ca -->
+                <!-- Card 1 -->
                 <div class="col-md-4">
                     <div class="uc-card">
                         <i class="fas fa-calendar-alt fa-2x text-gold"></i>
                         <h3>Đặt Ca Làm</h3>
                         <p>Xem danh sách ca làm việc theo tuần, đăng ký ca làm mới và tìm kiếm lịch trình phù hợp.</p>
-                        <a href="/NhanVien/DatCaLam" class="btn-gold-action text-uppercase">Truy cập</a>
+                        <a href="/NhanVien/DatCaLam" class="btn-gold-action">TRUY CẬP</a>
                     </div>
                 </div>
 
-                <!-- Chức năng Quản Lý Phòng -->
+                <!-- Card 2 -->
                 <div class="col-md-4">
                     <div class="uc-card">
                         <i class="fas fa-bed fa-2x text-gold"></i>
                         <h3>Quản Lý Phòng</h3>
                         <p>Theo dõi trạng thái phòng trống, cập nhật tình trạng dọn dẹp hoặc báo cáo sự cố kỹ thuật.</p>
-                        <a href="/NhanVien/QuanLyPhong" class="btn-gold-action text-uppercase">Quản lý</a>
+                        <a href="/NhanVien/QuanLyPhong" class="btn-gold-action">QUẢN LÝ</a>
                     </div>
                 </div>
 
-                <!-- Chức năng Khách Hàng -->
+                <!-- Card 3 -->
                 <div class="col-md-4">
                     <div class="uc-card">
                         <i class="fas fa-users-cog fa-2x text-gold"></i>
                         <h3>Khách Hàng</h3>
                         <p>Tiếp nhận yêu cầu nhận phòng (Check-in), trả phòng (Check-out) và xử lý thông tin khách hàng.</p>
-                        <a href="/NhanVien/QuanLyKhachHang" class="btn-gold-action text-uppercase">Xử lý</a>
+                        <a href="/NhanVien/QuanLyKhachHang" class="btn-gold-action">XỬ LÝ</a>
                     </div>
                 </div>
             </div>
