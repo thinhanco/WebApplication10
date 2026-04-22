@@ -1,42 +1,71 @@
 using Microsoft.EntityFrameworkCore;
+using WebApplication10.Models;
+using WebApplication10.Models.UserModels;
 
 namespace WebApplication10.Models
 {
     public class QuanLyKhachSanDB : DbContext
     {
-        // Hàm khởi tạo bắt buộc cho ASP.NET Core
-        public QuanLyKhachSanDB(DbContextOptions<QuanLyKhachSanDB> options) : base(options)
-        {
-        }
+        public QuanLyKhachSanDB(DbContextOptions<QuanLyKhachSanDB> options) : base(options) { }
 
-        // --- ĐĂNG KÝ CÁC BẢNG (DbSet) ---
-        // Lưu ý: Tên ở đây nên khớp với tên biến bạn gọi trong Controller (_db.TaiKhoans)
+        // Models từ phần Nhân viên & Admin
         public DbSet<ChucVu> ChucVus { get; set; }
         public DbSet<NhanVien> NhanViens { get; set; }
-        public DbSet<TaiKhoans> TaiKhoans { get; set; }
-        public DbSet<Room> Phongs { get; set; }
         public DbSet<CaLam> CaLams { get; set; }
         public DbSet<DangKyCaLam> DangKyCaLams { get; set; }
         public DbSet<BaoCaoPhong> BaoCaoPhongs { get; set; }
 
-        // --- CẤU HÌNH LIÊN KẾT BẢNG (Fluent API) ---
+        // Models từ PBL3 (Khách hàng, Đặt phòng)
+        public DbSet<Account> Accounts { get; set; }
+        public DbSet<Room> Rooms { get; set; }
+        public DbSet<BaseUser> UserProfiles { get; set; }
+        public DbSet<KhachHang> KhachHangs { get; set; }
+        public DbSet<Booking> Bookings { get; set; }
+
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Ép buộc EF Core tìm đúng tên bảng đã có chữ 's' trong SQL Server
-            // Nếu bạn đặt tên bảng trong SQL là gì thì điền chính xác vào phần ToTable("...")
-
-            modelBuilder.Entity<ChucVu>().ToTable("ChucVus");
+            // 1. Đặt tên bảng
+            modelBuilder.Entity<Account>().ToTable("Accounts");
+            modelBuilder.Entity<Room>().ToTable("Rooms");
+            modelBuilder.Entity<Booking>().ToTable("Bookings");
             modelBuilder.Entity<NhanVien>().ToTable("NhanViens");
-            modelBuilder.Entity<TaiKhoans>().ToTable("TaiKhoans");
-
-            modelBuilder.Entity<Room>().ToTable("Phongs");
+            modelBuilder.Entity<ChucVu>().ToTable("ChucVus");
             modelBuilder.Entity<CaLam>().ToTable("CaLams");
             modelBuilder.Entity<DangKyCaLam>().ToTable("DangKyCaLams");
-            modelBuilder.Entity<BaoCaoPhong>().ToTable("BaoCaoPhongs");
+            modelBuilder.Entity<BaoCaoPhong>().ToTable("BaoCaoPhong");
 
-            // Nếu bạn dùng khóa chính phức tạp hoặc cần cấu hình thêm, viết ở đây
+            // Cấu hình kế thừa cho UserProfiles (TPH)
+            modelBuilder.Entity<BaseUser>().ToTable("UserProfiles");
+            // KhachHang kế thừa từ BaseUser nên không cần gọi .ToTable nữa, EF sẽ tự hiểu
+
+            // 2. Cấu hình quan hệ Account - NhanVien (1-1)
+            modelBuilder.Entity<NhanVien>()
+                .HasOne(nv => nv.Account)
+                .WithOne(a => a.NhanVien)
+                .HasForeignKey<NhanVien>(nv => nv.AccountID); // Dùng AccountID trong bảng NhanVien làm khóa ngoại
+
+            // 3. Cấu hình quan hệ Account - UserProfile (1-1)
+            modelBuilder.Entity<BaseUser>()
+                .HasOne(up => up.Account)
+                .WithOne(a => a.UserProfile)
+                .HasForeignKey<BaseUser>(up => up.AccountID); // Dùng AccountID trong bảng UserProfile làm khóa ngoại
+
+            // 4. Cấu hình Booking - KhachHang
+            // 4. Cấu hình Booking - KhachHang
+            modelBuilder.Entity<Booking>()
+                .HasOne(b => b.KhachHang)
+                .WithMany()
+                .HasForeignKey(b => b.MaKhachHang)  // ✅ Đúng tên property
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // 5. Chuyển Enum thành string
+            modelBuilder.Entity<Account>().Property(a => a.Role).HasConversion<string>();
+            modelBuilder.Entity<Room>().Property(r => r.LoaiPhong).HasConversion<string>();
+            modelBuilder.Entity<Room>().Property(r => r.TrangThai).HasConversion<string>();
+            modelBuilder.Entity<Booking>().Property(b => b.TrangThaiDat).HasConversion<string>();
         }
     }
 }
