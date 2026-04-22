@@ -64,12 +64,12 @@ namespace WebApplication10.Controllers
                 .ToDictionary(g => g.Key.MaCa + "_" + g.Key.Date.ToString("yyyy-MM-dd"), g => g.Count());
 
             // 2. TÁCH LOGIC: Tạo danh sách ViewModel
-            var viewModel = new List<DayScheduleViewModel>();
+            var viewModel = new List<DatCaLamViewModel>();
 
             for (int i = 0; i < 7; i++)
             {
                 var currentDay = startOfWeek.AddDays(i);
-                var dayModel = new DayScheduleViewModel
+                var dayModel = new DatCaLamViewModel
                 {
                     Date = currentDay,
                     DayOfWeekName = currentDay.ToString("dddd"),
