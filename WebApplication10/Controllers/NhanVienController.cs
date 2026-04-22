@@ -1,13 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WebApplication10.Models;
-using System.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-
+using WebApplication10.Models;
+using WebApplication10.Models.ViewModels;
 namespace WebApplication10.Controllers
 {
     [Authorize(Roles = "NhanVien")]
@@ -46,44 +46,57 @@ namespace WebApplication10.Controllers
         public IActionResult DatCaLam()
         {
             int maNV = GetMaNV();
+            if (maNV == 0) return RedirectToAction("Login", "Account");
 
-            if (maNV == 0)
-            {
-                return RedirectToAction("Login", "Account");
-            }
-
-            var loaiCas = _db.CaLams.ToList();
-
+            // 1. Tính toán ngày trong tuần
             DateTime today = DateTime.Today;
             int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
             DateTime startOfWeek = today.AddDays(-1 * diff);
-            List<DateTime> weekDays = new List<DateTime>();
-            for (int i = 0; i < 7; i++) { weekDays.Add(startOfWeek.AddDays(i)); }
-            ViewBag.WeekDays = weekDays;
 
+            var loaiCas = _db.CaLams.ToList();
             var registered = _db.DangKyCaLams
-                .Where(x => x.MaNV == maNV
-                         && x.NgayLam >= startOfWeek
-                         && x.NgayLam <= weekDays.Last())
-                .Select(x => new { MaCa = x.MaCa, NgayLam = x.NgayLam.ToString("yyyy-MM-dd") })
+                .Where(x => x.MaNV == maNV && x.NgayLam >= startOfWeek && x.NgayLam <= startOfWeek.AddDays(6))
                 .ToList();
 
-            ViewBag.RegisteredShifts = registered;
-            // Đếm số người đã đăng ký cho từng ca trong tuần hiện tại
-            var shiftCounts = _db.DangKyCaLams
-                .Where(x => x.NgayLam >= startOfWeek && x.NgayLam <= weekDays.Last())
-                // Nhóm theo Mã Ca và Ngày Làm
+            var allShiftCounts = _db.DangKyCaLams
+                .Where(x => x.NgayLam >= startOfWeek && x.NgayLam <= startOfWeek.AddDays(6))
                 .GroupBy(x => new { x.MaCa, x.NgayLam.Date })
-                .Select(g => new {
-                    // Tạo một Key độc nhất (Ví dụ: "1_2024-04-20")
-                    Key = g.Key.MaCa + "_" + g.Key.Date.ToString("yyyy-MM-dd"),
-                    Count = g.Count()
-                })
-                // Chuyển thành Dictionary để ngoài View tra cứu cho nhanh
-                .ToDictionary(x => x.Key, x => x.Count);
+                .ToDictionary(g => g.Key.MaCa + "_" + g.Key.Date.ToString("yyyy-MM-dd"), g => g.Count());
 
-            ViewBag.ShiftCounts = shiftCounts;
-            return View(loaiCas);
+            // 2. TÁCH LOGIC: Tạo danh sách ViewModel
+            var viewModel = new List<DayScheduleViewModel>();
+
+            for (int i = 0; i < 7; i++)
+            {
+                var currentDay = startOfWeek.AddDays(i);
+                var dayModel = new DayScheduleViewModel
+                {
+                    Date = currentDay,
+                    DayOfWeekName = currentDay.ToString("dddd"),
+                    Shifts = new List<ShiftItemViewModel>()
+                };
+
+                foreach (var shift in loaiCas)
+                {
+                    string key = $"{shift.MaCa}_{currentDay:yyyy-MM-dd}";
+                    int count = allShiftCounts.ContainsKey(key) ? allShiftCounts[key] : 0;
+
+                    dayModel.Shifts.Add(new ShiftItemViewModel
+                    {
+                        MaCa = shift.MaCa,
+                        TenCa = shift.TenCa,
+                        GioLam = $"{shift.GioBatDau:hh\\:mm} - {shift.GioKetThuc:hh\\:mm}",
+                        NgayLamStr = currentDay.ToString("yyyy-MM-dd"),
+                        IsRegistered = registered.Any(r => r.MaCa == shift.MaCa && r.NgayLam.Date == currentDay.Date),
+                        IsFull = count >= shift.SoLuongToiDa,
+                        CurrentCount = count,
+                        MaxCount = shift.SoLuongToiDa
+                    });
+                }
+                viewModel.Add(dayModel);
+            }
+
+            return View(viewModel); // Truyền trực tiếp ViewModel vào View
         }
 
         // ==========================================
@@ -193,22 +206,43 @@ namespace WebApplication10.Controllers
 
         public IActionResult QuanLyPhong(string searchString, RoomStatus? statusFilter)
         {
-            var rooms = _db.Rooms.AsQueryable();
+            // 1. Lấy dữ liệu dưới dạng IQueryable để lọc
+            var roomsQuery = _db.Rooms.AsQueryable();
 
+            // 2. Thực hiện lọc (Giữ nguyên logic cũ)
             if (!string.IsNullOrEmpty(searchString))
             {
-                rooms = rooms.Where(r => r.SoPhong.ToString().Contains(searchString));
+                roomsQuery = roomsQuery.Where(r => r.SoPhong.ToString().Contains(searchString));
             }
 
             if (statusFilter.HasValue)
             {
-                rooms = rooms.Where(r => r.TrangThai == statusFilter.Value);
+                roomsQuery = roomsQuery.Where(r => r.TrangThai == statusFilter.Value);
             }
 
+            // 3. TÁCH LOGIC: Chuyển đổi sang ViewModel ngay tại đây
+            var viewModel = roomsQuery.Select(p => new QuanLyPhongViewModel
+            {
+                SoPhong = p.SoPhong,
+                LoaiPhong = p.LoaiPhong.ToString(),
+
+                // Chuyển Enum sang Tiếng Việt để hiển thị
+                TrangThaiDisplay = p.TrangThai == RoomStatus.Available ? "Trống" :
+                                   p.TrangThai == RoomStatus.Occupied ? "Đang ở" :
+                                   p.TrangThai == RoomStatus.Cleaning ? "Đang dọn dẹp" : "Bảo trì",
+
+                // Quyết định màu sắc Badge ngay tại Controller
+                BadgeClass = p.TrangThai == RoomStatus.Available ? "bg-success text-white" :
+                             p.TrangThai == RoomStatus.Occupied ? "bg-danger text-white" :
+                             p.TrangThai == RoomStatus.Cleaning ? "bg-warning text-dark" : "bg-secondary text-white"
+            }).ToList();
+
+            // 4. Gửi dữ liệu tìm kiếm cũ về View để hiển thị lại trên thanh search
             ViewBag.CurrentSearch = searchString;
             ViewBag.CurrentStatus = statusFilter;
 
-            return View(rooms.ToList());
+            // 5. Trả về View với danh sách ViewModel thay vì danh sách Room
+            return View(viewModel);
         }
 
         [HttpPost]
@@ -235,11 +269,27 @@ namespace WebApplication10.Controllers
         {
             var bookings = await _db.Bookings
                 .Include(b => b.KhachHang)
-                .Include(b => b.Room)
                 .OrderByDescending(b => b.NgayDat)
                 .ToListAsync();
 
-            return View(bookings);
+            // CHUYỂN ĐỔI SANG VIEWMODEL TẠI ĐÂY
+            var viewModel = bookings.Select(b => new QuanLyKhachHangViewModel
+            {
+                BookingID = b.BookingID,
+                TenKhachHang = b.KhachHang?.Hoten ?? "N/A",
+                SoDienThoai = b.KhachHang?.sđt ?? "",
+                SoPhong = b.SoPhong.ToString(),
+                NgayDen = b.CheckIn.ToString("dd/MM/yyyy"),
+                ChoPhepDuyet = (b.TrangThaiDat == BookingStatus.ChoXacNhan),
+
+                // Logic hiển thị badge tách khỏi View
+                TrangThaiHienThi = b.TrangThaiDat == BookingStatus.ChoXacNhan ? "Chờ nhận phòng" :
+                                   b.TrangThaiDat == BookingStatus.DaXacNhan ? "Đã nhận phòng" : "Khác",
+                BadgeClass = b.TrangThaiDat == BookingStatus.ChoXacNhan ? "bg-warning text-dark" :
+                             b.TrangThaiDat == BookingStatus.DaXacNhan ? "bg-success" : "bg-secondary"
+            }).ToList();
+
+            return View(viewModel);
         }
 
         [HttpPost]
