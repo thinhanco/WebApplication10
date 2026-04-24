@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication10.Models;
 
@@ -13,56 +13,165 @@ namespace WebApplication10.Controllers
             _db = db;
         }
 
-        // 1. Trang chủ Dashboard
         public IActionResult Index()
         {
             ViewBag.TotalStaff = _db.NhanViens.Count();
-            ViewBag.TotalRooms = _db.Phongs.Count();
+            ViewBag.TotalRooms = _db.Rooms.Count();
             ViewBag.PendingShifts = _db.DangKyCaLams.Count(x => x.TrangThai == "Pending");
             return View();
         }
 
-        // 2. Quản lý tài khoản
-        public IActionResult QuanLyTaiKhoan()
+        public IActionResult QuanLyTaiKhoan(string searchString)
         {
-            var accounts = _db.TaiKhoans.Include(u => u.NhanVien).ToList();
+            // 1. Khởi tạo truy vấn, bao gồm thông tin Nhân viên
+            var query = _db.Accounts.Include(a => a.NhanVien).AsQueryable();
+
+            // 2. Kiểm tra nếu có từ khóa tìm kiếm
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.ToLower();
+
+                // Lọc theo Username hoặc Tên nhân viên sở hữu tài khoản đó
+                query = query.Where(a => a.Username.ToLower().Contains(searchString)
+                                      || (a.NhanVien != null && a.NhanVien.HoTen.ToLower().Contains(searchString)));
+            }
+
+            // 3. Lưu lại từ khóa để hiển thị ở ô tìm kiếm trên View
+            ViewBag.CurrentFilter = searchString;
+
+            var accounts = query.ToList();
             return View(accounts);
         }
 
-        [HttpPost]
-        public IActionResult ToggleLock(string username)
+        // --- SỬA LẠI ĐOẠN NÀY ---
+        // Đây phải là một hàm (Action) nằm trong AdminController
+        // Tìm kiếm nhân viên theo Tên, Số điện thoại hoặc Email
+        public IActionResult QuanLyNhanVien(string searchString)
         {
-            var acc = _db.TaiKhoans.Find(username);
-            if (acc != null)
-            {
-                acc.IsLocked = !acc.IsLocked;
-                _db.SaveChanges();
-            }
-            return RedirectToAction("QuanLyTaiKhoan");
-        }
+            // 1. Khởi tạo truy vấn cơ bản (bao gồm thông tin Chức vụ)
+            var query = _db.NhanViens.Include(nv => nv.ChucVu).AsQueryable();
 
-        // 3. Quản lý nhân viên
-        public IActionResult QuanLyNhanVien()
-        {
-            var staff = _db.NhanViens.Include(nv => nv.ChucVu).ToList();
+            // 2. Nếu có nhập từ khóa tìm kiếm
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.ToLower();
+                // Lọc theo Tên, Số điện thoại hoặc Email
+                query = query.Where(nv => nv.HoTen.ToLower().Contains(searchString)
+                                       || (nv.MaNV != null && nv.MaNV.ToString().Contains(searchString))
+                                       );
+
+            }
+
+            // 3. Lưu lại từ khóa tìm kiếm để hiển thị lại trên ô nhập liệu ở View
+            ViewBag.CurrentFilter = searchString;
+
+            var staff = query.ToList();
             return View(staff);
         }
+        // -----------------------
 
-        // 4. QUẢN LÝ HỆ THỐNG (Hàm này đã được thêm để sửa lỗi 404)
         public IActionResult QuanLyHeThong()
         {
-            var phongs = _db.Phongs.ToList();
+            var phongs = _db.Rooms.ToList();
             return View(phongs);
         }
+        // --- QUẢN LÝ PHÒNG ---
 
-        // 5. Phê duyệt ca làm
-        public IActionResult DuyetCaLam()
+        // 1. Chức năng THÊM PHÒNG (Giao diện)
+        public IActionResult ThemPhong()
         {
-            var pendingList = _db.DangKyCaLams
-                .Include(x => x.NhanVien)
-                .Include(x => x.CaLam)
-                .Where(x => x.TrangThai == "Pending").ToList();
-            return View(pendingList);
+            return View();
+        }
+
+        // 1. Chức năng THÊM PHÒNG (Xử lý lưu vào DB)
+        [HttpPost]
+        [HttpPost]
+        public IActionResult ThemPhong(Room phong)
+        {
+            try
+            {
+                _db.Rooms.Add(phong);
+                _db.SaveChanges();
+                TempData["Success"] = "Đã thêm phòng thành công!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = "Lỗi: " + ex.Message;
+            }
+            return RedirectToAction("QuanLyHeThong");
+        }
+
+        // 2. Chức năng SỬA PHÒNG (Giao diện - Lấy dữ liệu cũ đổ vào form)
+        public IActionResult SuaPhong(string id) // id ở đây chính là SoPhong
+        {
+            if (string.IsNullOrEmpty(id)) return NotFound();
+
+            var phong = _db.Rooms.Find(id);
+            if (phong == null) return NotFound();
+
+            return View(phong);
+        }
+
+        // 2. Chức năng SỬA PHÒNG (Xử lý cập nhật thay đổi)
+        [HttpPost]
+        public IActionResult SuaPhong(Room phong)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _db.Entry(phong).State = EntityState.Modified;
+                    _db.SaveChanges();
+                    return RedirectToAction("QuanLyHeThong");
+                }
+                catch (Exception)
+                {
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi cập nhật!");
+                }
+            }
+            return View(phong);
+        }
+
+        // 3. Chức năng XÓA PHÒNG (Nên có)
+        [HttpPost]
+        public IActionResult XoaPhong(string id)
+        {
+            var phong = _db.Rooms.Find(id);
+            if (phong != null)
+            {
+                _db.Rooms.Remove(phong);
+                _db.SaveChanges();
+            }
+            return RedirectToAction("QuanLyHeThong");
+        }
+        // Chức năng XÓA NHÂN VIÊN
+        [HttpPost]
+        public IActionResult XoaNhanVien(int id)
+        {
+            try
+            {
+                // 1. Tìm nhân viên theo mã
+                var nv = _db.NhanViens.Find(id);
+
+                if (nv != null)
+                {
+                    // 2. Thực hiện xóa
+                    _db.NhanViens.Remove(nv);
+                    _db.SaveChanges();
+                    TempData["Success"] = "Đã xóa nhân viên thành công!";
+                }
+                else
+                {
+                    TempData["Error"] = "Không tìm thấy nhân viên này.";
+                }
+            }
+            catch (Exception ex)
+            {
+                // Trường hợp nhân viên đang có dữ liệu ở bảng khác (ví dụ: có tài khoản)
+                TempData["Error"] = "Không thể xóa nhân viên này vì có dữ liệu liên quan (tài khoản hoặc lịch làm việc).";
+            }
+
+            return RedirectToAction("QuanLyNhanVien");
         }
     }
 }
