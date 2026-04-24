@@ -1,4 +1,4 @@
-﻿@model IEnumerable<WebApplication10.Models.NhanVien>
+@model IEnumerable<WebApplication10.Models.NhanVien>
 @{
     Layout = null;
 }
@@ -9,42 +9,99 @@
     <title>Quản Lý Nhân Sự - Lumina Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    @await Html.PartialAsync("_SidebarStyles")
+    <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
 </head>
 <body>
     <div class="d-flex">
         @await Html.PartialAsync("_SidebarAdmin")
 
         <div class="main-content">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 style="font-family: 'Poppins', sans-serif; color: #d4af37; font-weight: 700;">QUẢN LÝ NHÂN VIÊN</h2>
-                <button class="btn btn-dark" style="background: #d4af37; border:none;"><i class="fas fa-user-plus me-2"></i>Thêm nhân viên</button>
+            <h2 class="page-title text-uppercase text-gold" style="font-weight: 800;">
+                Quản lý nhân viên
+            </h2>
+
+            <!-- HIỂN THỊ THÔNG BÁO (THÀNH CÔNG/LỖI) -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <!-- ĐOẠN FORM TÌM KIẾM -->
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <form asp-action="QuanLyNhanVien" asp-controller="Admin" method="get" style="width: 500px;">
+                    <label class="fw-bold mb-2" style="color: var(--dark-blue)">Tìm kiếm nhân viên:</label>
+                    <div class="input-group">
+                        <input type="text" name="searchString" class="form-control"
+                               placeholder="Nhập tên hoặc mã..."
+                               value="@ViewBag.CurrentFilter"
+                               style="border: 1px solid var(--primary-gold); height: 45px; border-radius: 8px 0 0 8px;">
+            
+                        <button class="btn" type="submit"
+                                style="background: var(--dark-blue); color: white; height: 45px; padding: 0 25px; border-radius: 0;">
+                            <i class="fas fa-search me-2"></i>Tìm kiếm
+                        </button>
+            
+                        <a asp-action="QuanLyNhanVien" class="btn btn-secondary d-flex align-items-center"
+                               style="height: 45px; padding: 0 15px; border-radius: 0 8px 8px 0;">
+                            <i class="fas fa-redo"></i>
+                        </a>
+                    </div>
+                </form>
+
+                <a href="/Admin/ThemNhanVien" class="btn btn-save d-flex align-items-center justify-content-center"
+                       style="height: 45px; padding: 0 30px; font-size: 0.9rem; background-color: var(--primary-gold); color: white; text-decoration: none; border-radius: 8px;">
+                    <i class="fas fa-plus-circle me-2"></i>Thêm mới nhân viên
+                </a>
             </div>
 
-            <div class="table-container p-0">
+            <!-- Bảng danh sách -->
+            <div class="table-container p-0 shadow-lg">
                 <table class="table table-hover mb-0">
-                    <thead style="background: #1a252f; color: #d4af37;">
+                    <thead style="background: var(--dark-blue); color: var(--primary-gold);">
                         <tr>
-                            <th class="p-3">MÃ NV</th>
+                            <th class="text-center p-3">MÃ NV</th>
                             <th class="p-3">HỌ TÊN</th>
-                            <th class="p-3">CHỨC VỤ</th>
-                            <th class="p-3">THAO TÁC</th>
+                            <th class="text-center p-3">CHỨC VỤ</th>
+                            <th class="text-center p-3">THAO TÁC</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            <tr>
-                                <td class="p-3">#@item.MaNV</td>
-                                <td class="p-3 fw-bold">@item.HoTen</td>
-                                <td class="p-3">
-                                    <span class="badge @(item.ChucVu?.TenChucVu == "Admin" ? "bg-primary" : "bg-secondary")">
-                                        @item.ChucVu?.TenChucVu
+                            <tr style="vertical-align: middle;">
+                                <td class="text-center fw-bold text-muted p-3">#@item.MaNV</td>
+                                <td class="fw-bold p-3">@item.HoTen</td>
+                                <td class="text-center p-3">
+                                    <span class="badge @(item.ChucVu?.TenChucVu == "Admin" ? "bg-primary" : "bg-secondary") px-3 py-2" style="border-radius: 6px;">
+                                        @(item.ChucVu?.TenChucVu ?? "N/A")
                                     </span>
                                 </td>
-                                <td class="p-3">
-                                    <button class="btn btn-sm btn-outline-dark me-2"><i class="fas fa-edit"></i> Sửa</button>
-                                    <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i> Xóa</button>
+                                <td class="text-center p-3">
+                                    <!-- Nút Sửa -->
+                                    <a href="/Admin/SuaNhanVien/@item.MaNV" class="btn-gold-outline"
+                                           style="text-decoration:none; width: auto; padding: 6px 18px; font-size: 0.85rem; margin-right: 10px; border-radius: 50px; display: inline-block;">
+                                        <i class="fas fa-calendar-alt me-1"></i> Sửa
+                                    </a>
+                            
+                                    <!-- Form Xóa -->
+                                    <form asp-action="XoaNhanVien" asp-controller="Admin" method="post"
+                                          style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa nhân viên @item.HoTen?');">
+                                        <input type="hidden" name="id" value="@item.MaNV" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                style="border-radius: 50px; width: 35px; height: 35px;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         }
@@ -53,5 +110,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Script Bootstrap để đóng thông báo -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
