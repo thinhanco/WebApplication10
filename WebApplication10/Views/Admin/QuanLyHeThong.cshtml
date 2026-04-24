@@ -1,4 +1,4 @@
-﻿@model IEnumerable<WebApplication10.Models.Phong>
+@model IEnumerable<WebApplication10.Models.Room>
 @{
     Layout = null;
 }
@@ -9,36 +9,70 @@
     <title>Cấu Hình Hệ Thống - Lumina Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    @await Html.PartialAsync("_SidebarStyles")
+    <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
+    <style>
+        .text-gold { color: #d4af37; }
+        .btn-gold { background-color: #d4af37; color: #fff; border: none; font-weight: 600; }
+        .btn-gold:hover { background-color: #b8962d; color: #fff; }
+        .table-lumina { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .table-lumina thead { background-color: #1a1a1a; color: #d4af37; }
+        
+        .config-section { display: none; animation: fadeIn 0.5s; }
+        .config-section.active { display: block; }
+        @@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-content { border: none; border-radius: 15px; }
+        .modal-header { background-color: #1a1a1a; color: #d4af37; border-bottom: 2px solid #d4af37; }
+        .form-label { font-weight: 600; color: #333; }
+    </style>
 </head>
 <body>
     <div class="d-flex">
         @await Html.PartialAsync("_SidebarAdmin")
 
-        <div class="main-content">
-            <h2 style="font-family: 'Poppins', sans-serif; color: #d4af37; font-weight: 700; margin-bottom: 30px;">
+        <div class="main-content px-4 py-4 w-100">
+            <h2 style="font-family: 'Poppins', sans-serif; color: #d4af37; font-weight: 700; margin-bottom: 20px;">
                 CẤU HÌNH DỮ LIỆU HỆ THỐNG
             </h2>
 
-            <div class="row g-4">
+            <!-- BỘ BẮT LỖI VÀ THÔNG BÁO -->
+            <div class="mb-4">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i> <strong>LỖI:</strong> @TempData["Error"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+            </div>
+
+            <!-- Cards section -->
+            <div class="row g-4 mb-5">
                 <div class="col-md-4">
-                    <div class="registration-card text-center">
+                    <div class="registration-card text-center border p-4 bg-white rounded shadow-sm">
                         <i class="fas fa-hotel fa-3x text-gold mb-3"></i>
                         <h4>Danh Mục Phòng</h4>
                         <p class="text-muted small">Thêm phòng mới, chỉnh sửa đơn giá và loại phòng.</p>
-                        <button class="btn btn-sm btn-dark w-100">QUẢN LÝ CRUD</button>
+                        <button class="btn btn-sm btn-dark w-100" onclick="showSection('roomSection')">XEM DANH SÁCH</button>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="registration-card text-center">
+                    <div class="registration-card text-center border p-4 bg-white rounded shadow-sm">
                         <i class="fas fa-concierge-bell fa-3x text-gold mb-3"></i>
                         <h4>Dịch Vụ Đi Kèm</h4>
                         <p class="text-muted small">Cấu hình giá Buffet, Spa, và các tiện ích khách sạn.</p>
-                        <button class="btn btn-sm btn-dark w-100">CẤU HÌNH</button>
+                        <button class="btn btn-sm btn-dark w-100" onclick="showSection('serviceSection')">CẤU HÌNH</button>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="registration-card text-center">
+                    <div class="registration-card text-center border p-4 bg-white rounded shadow-sm">
                         <i class="fas fa-file-invoice-dollar fa-3x text-gold mb-3"></i>
                         <h4>Chính Sách Thuế/VAT</h4>
                         <p class="text-muted small">Điều chỉnh mức VAT (8-10%) áp dụng cho hóa đơn.</p>
@@ -46,7 +80,119 @@
                     </div>
                 </div>
             </div>
+
+            <!-- SECTION 1: QUẢN LÝ PHÒNG -->
+            <div id="roomSection" class="config-section active">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-gold"><i class="fas fa-list"></i> DANH SÁCH PHÒNG</h4>
+                    <button type="button" class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalThemPhong">
+                        <i class="fas fa-plus"></i> Thêm Phòng Mới
+                    </button>
+                </div>
+                <div class="table-responsive table-lumina">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Số Phòng (ID)</th>
+                                <th>Loại Phòng</th>
+                                <th>Sức Chứa</th>
+                                <th>Giá Phòng</th>
+                                <th>Trạng Thái</th>
+                                <th class="text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model) {
+                                <tr>
+                                    <td class="ps-4 fw-bold">#@item.SoPhong</td>
+                                    <td>@item.LoaiPhong</td>
+                                    <td>@item.Size người</td>
+                                    <td class="text-danger fw-bold">@string.Format("{0:N0}", item.GiaPhong) VNĐ</td>
+                                    <td><span class="badge @(item.TrangThai.ToString() == "Available" ? "bg-success" : "bg-secondary")">@item.TrangThai</span></td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <a asp-action="SuaPhong" asp-route-id="@item.SoPhong" class="btn btn-sm btn-outline-warning"><i class="fas fa-edit"></i></a>
+                                            <form asp-action="XoaPhong" asp-route-id="@item.SoPhong" method="post" onsubmit="return confirm('Xóa phòng @item.SoPhong?')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SECTION 2: QUẢN LÝ DỊCH VỤ -->
+            <div id="serviceSection" class="config-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-gold"><i class="fas fa-concierge-bell"></i> DANH SÁCH DỊCH VỤ</h4>
+                </div>
+                <div class="table-responsive table-lumina text-center py-5 bg-white rounded">
+                    <p class="text-muted">Tính năng đang phát triển...</p>
+                </div>
+            </div>
+
         </div>
     </div>
+
+    <!-- MODAL THÊM PHÒNG (Đã bỏ nhập Số Phòng) -->
+    <div class="modal fade" id="modalThemPhong" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle"></i> THÊM PHÒNG MỚI</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form asp-action="ThemPhong" method="post">
+                    <div class="modal-body p-4">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Loại Phòng</label>
+                                <select name="LoaiPhong" class="form-select">
+                                    <option value="Standard">Phòng Tiêu Chuẩn</option>
+                                    <option value="Deluxe">Phòng Sang Trọng</option>
+                                    <option value="Suite">Phòng Tổng Thống</option>
+                                </select>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">Sức Chứa (Người)</label>
+                                <input name="Size" type="number" class="form-control" value="1" min="1" required />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Giá Phòng (VNĐ)</label>
+                            <input name="GiaPhong" type="number" class="form-control" placeholder="500000" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Trạng Thái</label>
+                            <select name="TrangThai" class="form-select">
+                                <option value="Available">Trống</option>
+                                <option value="Occupied">Đang ở</option>
+                                <option value="Cleaning">Đang dọn dẹp</option>
+                                <option value="Maintenance">Bảo trì</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-gold px-4">LƯU THÔNG TIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll('.config-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
