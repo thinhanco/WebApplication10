@@ -1,69 +1,168 @@
 @{
-    Layout = null;
+    Layout = "_NVDashboardLayout"; // Hoặc layout tương ứng của bạn
+    ViewData["Title"] = "Tổng Quan Vận Hành";
+    ViewData["ActiveMenu"] = "Index";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Tổng Quan Nhân Viên - Lumina Hotel</title>
-    <!-- Bootstrap & Google Fonts -->
-    <link rel="stylesheet" href="~/css/lumina-style.css" asp-append-version="true" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    
-    <!-- GỌI CSS DÙNG CHUNG (Để Sidebar và Font được đồng bộ) -->
 
-    
-</head>
-<body>
-    <div class="d-flex">
-        <!-- SIDEBAR -->
-        @await Html.PartialAsync("_SidebarNhanVien")
+@section Styles {
+    <style>
+        /* GRID 2 CỘT CHO 2 BIỂU ĐỒ TRÒN */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
 
-        <!-- MAIN CONTENT -->
-        <div class="main-content">
-            <div class="d-flex justify-content-between align-items-center mb-5">
-                <h2 class="page-title">Tác Vụ Nhân Viên</h2>
-                
-                <div class="user-welcome">
-                    <i class="far fa-user-circle text-gold me-2"></i>
-                    Chào, <strong>@ViewBag.HoTen</strong>
-                </div>
-            </div>
+        .uc-card-chart {
+            background: #fff;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-light);
+            transition: 0.3s;
+            border-bottom: 5px solid transparent;
+            display: flex;
+            flex-direction: column;
+            min-height: 500px;
+        }
 
-            <div class="row g-4">
-                <!-- Card 1 -->
-                <div class="col-md-4">
-                    <div class="uc-card">
-                        <i class="fas fa-calendar-alt fa-2x text-gold"></i>
-                        <h3>Đặt Ca Làm</h3>
-                        <p>Xem danh sách ca làm việc theo tuần, đăng ký ca làm mới và tìm kiếm lịch trình phù hợp.</p>
-                        <a href="/NhanVien/DatCaLam" class="btn-gold-action">TRUY CẬP</a>
-                    </div>
-                </div>
+            .uc-card-chart:hover {
+                transform: translateY(-5px);
+                box-shadow: var(--shadow-dark);
+                border-bottom-color: var(--primary-color);
+            }
 
-                <!-- Card 2 -->
-                <div class="col-md-4">
-                    <div class="uc-card">
-                        <i class="fas fa-bed fa-2x text-gold"></i>
-                        <h3>Quản Lý Phòng</h3>
-                        <p>Theo dõi trạng thái phòng trống, cập nhật tình trạng dọn dẹp hoặc báo cáo sự cố kỹ thuật.</p>
-                        <a href="/NhanVien/QuanLyPhong" class="btn-gold-action">QUẢN LÝ</a>
-                    </div>
-                </div>
+        .chart-header-title {
+            font-family: var(--font-heading);
+            color: var(--secondary-color);
+            font-size: 1.4rem;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #f8f8f8;
+            padding-bottom: 15px;
+        }
 
-                <!-- Card 3 -->
-                <div class="col-md-4">
-                    <div class="uc-card">
-                        <i class="fas fa-users-cog fa-2x text-gold"></i>
-                        <h3>Khách Hàng</h3>
-                        <p>Tiếp nhận yêu cầu nhận phòng (Check-in), trả phòng (Check-out) và xử lý thông tin khách hàng.</p>
-                        <a href="/NhanVien/QuanLyKhachHang" class="btn-gold-action">XỬ LÝ</a>
-                    </div>
-                </div>
-            </div>
-        </div>
+            .chart-header-title i {
+                color: var(--primary-color);
+            }
+
+        .chart-body {
+            flex-grow: 1;
+            position: relative;
+            min-height: 300px;
+        }
+
+        .btn-action-small {
+            margin-top: 25px;
+            text-align: center;
+            padding: 10px 25px;
+            border-radius: 25px;
+            background: var(--bg-body);
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border: 1px solid #eee;
+            transition: 0.3s;
+        }
+
+        .uc-card-chart:hover .btn-action-small {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+    </style>
+}
+
+<!-- TIÊU ĐỀ TRANG -->
+<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem;">
+    <div>
+        <h2 style="font-family: var(--font-heading); font-size: 2.2rem; color: var(--secondary-color);">Bảng Điều Khiển Vận Hành</h2>
+        <p style="color: var(--text-light)">Phân tích tình trạng phòng và xu hướng đặt phòng của khách hàng.</p>
     </div>
-</body>
-</html>
+    <div style="background: white; padding: 10px 20px; border-radius: 30px; box-shadow: var(--shadow-light); display: flex; align-items: center; gap: 10px;">
+        <i class="far fa-chart-bar" style="color: var(--primary-color); font-size: 1.2rem;"></i>
+        <span>Dữ liệu thực tế: <strong>@DateTime.Now.ToString("dd/MM/yyyy")</strong></span>
+    </div>
+</div>
+
+<!-- LƯỚI BIỂU ĐỒ 2 CỘT -->
+<div class="action-grid">
+    
+    <!-- Chart 1: Trạng thái phòng (GIỮ LẠI) -->
+    <div class="uc-card-chart">
+        <div class="chart-header-title">
+            <i class="fas fa-door-open"></i>
+            <span>Tình Trạng Vận Hành Phòng</span>
+        </div>
+        <div class="chart-body">
+            <canvas id="roomStatusChart"></canvas>
+        </div>
+        <a asp-action="QuanLyPhong" class="btn-action-small">XEM CHI TIẾT PHÒNG</a>
+    </div>
+
+    <!-- Chart 2: Loại phòng ưa chuộng (THAY THẾ MỚI) -->
+    <div class="uc-card-chart">
+        <div class="chart-header-title">
+            <i class="fas fa-crown"></i>
+            <span>Loại Phòng Được Ưa Chuộng</span>
+        </div>
+        <div class="chart-body">
+            <canvas id="roomTypeChart"></canvas>
+        </div>
+        <a asp-action="QuanLyKhachHang" class="btn-action-small">XEM LỊCH SỬ ĐẶT</a>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            
+        // 1. Biểu đồ Trạng thái phòng (Tròn Doughnut)
+        new Chart(document.getElementById('roomStatusChart'), {
+        type: 'doughnut',
+        data: {
+        labels: @Html.Raw(ViewBag.RoomLabels ?? "[]"),
+        datasets: [{
+        data: @Html.Raw(ViewBag.RoomData ?? "[]"),
+        backgroundColor: ['#27ae60', '#d4af37', '#e74c3c', '#2c3e50'],
+        borderWidth: 5,
+        borderColor: '#ffffff'
+        }]
+        },
+        options: {
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+        legend: { position: 'bottom', labels: { padding: 20, font: { weight: '600' } } }
+        }
+        }
+        });
+
+        // 2. Biểu đồ Loại phòng ưa chuộng (Tròn Doughnut)
+        new Chart(document.getElementById('roomTypeChart'), {
+        type: 'doughnut',
+        data: {
+        labels: @Html.Raw(ViewBag.RoomTypeLabels ?? "[]"),
+        datasets: [{
+        data: @Html.Raw(ViewBag.RoomTypeData ?? "[]"),
+        backgroundColor: ['#2c3e50', '#d4af37', '#7f8c8d', '#34495e'],
+        borderWidth: 5,
+        borderColor: '#ffffff'
+        }]
+        },
+        options: {
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+        legend: { position: 'bottom', labels: { padding: 20, font: { weight: '600' } } }
+        }
+        }
+        });
+        });
+    </script>
+}
