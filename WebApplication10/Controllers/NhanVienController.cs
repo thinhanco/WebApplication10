@@ -3,7 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using PBL3_Hotel_System.Data;
 using PBL3_Hotel_System.Models;
 using PBL3_Hotel_System.ViewModels;
-
+using PBL3_Hotel_System.Models.UserModels;
+using Newtonsoft.Json;
 namespace PBL3_Hotel_System_.Controllers
 {
     public class NhanVienController(HotelDbContext _context) : Controller
@@ -36,9 +37,63 @@ namespace PBL3_Hotel_System_.Controllers
                              .Select(i => startOfWeek.AddDays(i))
                              .ToList();
         }
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            // 1. Lấy thông tin nhân viên đang đăng nhập
+            int maNV = GetMaNV();
+            if (maNV == 0) return RedirectToAction("Login", "Account");
+
             ViewBag.HoTen = User.Identity?.Name;
+            try
+            {
+                // --- BIỂU ĐỒ 1: TÌNH TRẠNG PHÒNG TOÀN HỆ THỐNG ---
+                // Lấy dữ liệu thô từ DB về RAM trước (.ToListAsync())
+                var roomStatsRaw = await _context.Rooms
+                    .GroupBy(r => r.TrangThai)
+                    .Select(g => new { StatusEnum = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                // Sau đó mới .ToString() trên RAM để lấy tên chữ
+                var roomStats = roomStatsRaw.Select(x => new {
+                    Status = x.StatusEnum.ToString(),
+                    x.Count
+                }).ToList();
+
+                ViewBag.RoomLabels = JsonConvert.SerializeObject(roomStats.Select(x => x.Status));
+                ViewBag.RoomData = JsonConvert.SerializeObject(roomStats.Select(x => x.Count));
+
+
+                // --- BIỂU ĐỒ 2: LOẠI PHÒNG KHÁCH ĐẶT NHIỀU NHẤT ---
+                // 1. Lấy dữ liệu thô (vẫn là Enum số) từ DB
+                var roomTypeStatsRaw = await _context.Bookings
+                    .Join(_context.Rooms,
+                          b => b.SoPhong,
+                          r => r.SoPhong,
+                          (b, r) => r.LoaiPhong)
+                    .GroupBy(lp => lp)
+                    .Select(g => new { LoaiEnum = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                // 2. Chuyển đổi Enum sang Chuỗi (Standard, Deluxe, Suite...)
+                var roomTypeStats = roomTypeStatsRaw.Select(x => new {
+                    Loai = x.LoaiEnum.ToString(), // Ép kiểu sang chữ tại đây
+                    x.Count
+                }).ToList();
+
+                ViewBag.RoomTypeLabels = JsonConvert.SerializeObject(roomTypeStats.Select(x => x.Loai));
+                ViewBag.RoomTypeData = JsonConvert.SerializeObject(roomTypeStats.Select(x => x.Count));
+
+
+                // Thống kê nhanh cho các ô số liệu (Quick Stats)
+                ViewBag.CountPendingBooking = await _context.Bookings.CountAsync(x => x.TrangThaiDat == BookingStatus.ChoXacNhan);
+                ViewBag.CountCleaningRoom = await _context.Rooms.CountAsync(x => x.TrangThai == RoomStatus.Cleaning);
+            }
+            catch (Exception)
+            {
+                ViewBag.RoomLabels = "[]"; ViewBag.RoomData = "[]";
+                ViewBag.RoomTypeLabels = "[]"; ViewBag.RoomTypeData = "[]";
+            }
+
             return View();
         }
 
@@ -312,8 +367,17 @@ namespace PBL3_Hotel_System_.Controllers
             var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.BookingID == model.BookingID);
             if (booking == null) return NotFound();
 
+
+            // ========================================================
+            // LOGIC KHÓA NGÀY TỪ SERVER:
+            // Lấy Ngày từ Database (booking.CheckIn) 
+            // Cộng với Giờ/Phút/Giây từ Form (model.InputRealCheckIn)
+            // ========================================================
+            var inputTime = model.InputRealCheckIn.TimeOfDay;  // Lấy phần 09:26...
+            var finalCheckIn = booking.CheckIn.Date.Add(inputTime);// Ghép vào ngày 24/04
+
             // Cập nhật Đơn đặt phòng
-            booking.GioHenNhanPhong = model.InputGioHen;
+            booking.GioHenNhanPhong = finalCheckIn;
             booking.TrangThaiDat = BookingStatus.DaXacNhan;
 
             // Cập nhật Trạng thái vật lý của Phòng
