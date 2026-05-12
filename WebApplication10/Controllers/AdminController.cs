@@ -1,176 +1,203 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using WebApplication10.Models;
-
-namespace WebApplication10.Controllers
+using Newtonsoft.Json;
+using PBL3_Hotel_System.Data;
+using PBL3_Hotel_System.Models;
+using PBL3_Hotel_System.Models.UserModels;
+using PBL3_Hotel_System.ViewModels; // Chứa các ViewModel nếu cần
+using PBL3_Hotel_System_.Services.Interfaces;
+namespace PBL3_Hotel_System.Controllers
 {
-    public class AdminController : Controller
+    [Authorize(Roles = "QuanTriVien")] // Chỉ cho phép Admin truy cập
+    public class AdminController(HotelDbContext _db, IStatisticsService _statsService) : Controller
     {
-        private readonly QuanLyKhachSanDB _db;
+        // 1. TRANG DASHBOARD ADMIN
+       
 
-        public AdminController(QuanLyKhachSanDB db)
+        public async Task<IActionResult> Index()
         {
-            _db = db;
-        }
-
-        public IActionResult Index()
-        {
-            ViewBag.TotalStaff = _db.NhanViens.Count();
-            ViewBag.TotalRooms = _db.Rooms.Count();
-            ViewBag.PendingShifts = _db.DangKyCaLams.Count(x => x.TrangThai == "Pending");
-            return View();
-        }
-
-        public IActionResult QuanLyTaiKhoan(string searchString)
-        {
-            // 1. Khởi tạo truy vấn, bao gồm thông tin Nhân viên
-            var query = _db.Accounts.Include(a => a.NhanVien).AsQueryable();
-
-            // 2. Kiểm tra nếu có từ khóa tìm kiếm
-            if (!string.IsNullOrEmpty(searchString))
-            {
-                searchString = searchString.ToLower();
-
-                // Lọc theo Username hoặc Tên nhân viên sở hữu tài khoản đó
-                query = query.Where(a => a.Username.ToLower().Contains(searchString)
-                                      || (a.NhanVien != null && a.NhanVien.HoTen.ToLower().Contains(searchString)));
-            }
-
-            // 3. Lưu lại từ khóa để hiển thị ở ô tìm kiếm trên View
-            ViewBag.CurrentFilter = searchString;
-
-            var accounts = query.ToList();
-            return View(accounts);
-        }
-
-        // --- SỬA LẠI ĐOẠN NÀY ---
-        // Đây phải là một hàm (Action) nằm trong AdminController
-        // Tìm kiếm nhân viên theo Tên, Số điện thoại hoặc Email
-        public IActionResult QuanLyNhanVien(string searchString)
-        {
-            // 1. Khởi tạo truy vấn cơ bản (bao gồm thông tin Chức vụ)
-            var query = _db.NhanViens.Include(nv => nv.ChucVu).AsQueryable();
-
-            // 2. Nếu có nhập từ khóa tìm kiếm
-            if (!string.IsNullOrEmpty(searchString))
-            {
-                searchString = searchString.ToLower();
-                // Lọc theo Tên, Số điện thoại hoặc Email
-                query = query.Where(nv => nv.HoTen.ToLower().Contains(searchString)
-                                       || (nv.MaNV != null && nv.MaNV.ToString().Contains(searchString))
-                                       );
-
-            }
-
-            // 3. Lưu lại từ khóa tìm kiếm để hiển thị lại trên ô nhập liệu ở View
-            ViewBag.CurrentFilter = searchString;
-
-            var staff = query.ToList();
-            return View(staff);
-        }
-        // -----------------------
-
-        public IActionResult QuanLyHeThong()
-        {
-            var phongs = _db.Rooms.ToList();
-            return View(phongs);
-        }
-        // --- QUẢN LÝ PHÒNG ---
-
-        // 1. Chức năng THÊM PHÒNG (Giao diện)
-        public IActionResult ThemPhong()
-        {
-            return View();
-        }
-
-        // 1. Chức năng THÊM PHÒNG (Xử lý lưu vào DB)
-        [HttpPost]
-        [HttpPost]
-        public IActionResult ThemPhong(Room phong)
-        {
+            ViewData["ActiveMenu"] = "Index";
+            // Đếm nhân viên từ bảng kế thừa UserProfiles
+            ViewBag.TotalStaff = await _db.UserProfiles.OfType<NhanVien>().CountAsync();
+            ViewBag.TotalRooms = await _db.Rooms.CountAsync();
+            
+            // Giả sử bạn có bảng Đăng ký ca làm
+            ViewBag.PendingShifts = await _db.DangKyCaLams.CountAsync(x => x.TrangThai == "Pending");
             try
             {
-                _db.Rooms.Add(phong);
-                _db.SaveChanges();
-                TempData["Success"] = "Đã thêm phòng thành công!";
+                // 1. Xác định mốc thời gian: 7 ngày gần nhất (tính từ hôm nay lùi lại)
+                DateTime startDate = DateTime.Now.Date.AddDays(-6);
+
+                // 2. Lấy dữ liệu Booking trong khoảng 7 ngày này
+                var bookings = await _db.Bookings
+                    .Where(b => b.NgayDat >= startDate)
+                    .ToListAsync();
+
+                // 3. Tạo danh sách 7 ngày đầy đủ (để những ngày không có khách vẫn hiện số 0)
+                var last7Days = Enumerable.Range(0, 7)
+                    .Select(i => startDate.AddDays(i))
+                    .Select(date => new {
+                        Ngay = date.ToString("dd/MM"), // Định dạng ngày/tháng (VD: 10/05)
+                                                       // Tìm trong DB xem ngày này có tiền không, không có thì mặc định là 0
+                        TongTien = bookings
+                            .Where(b => b.NgayDat.Date == date)
+                            .Sum(b => (double)b.GiaLucDat)
+                    }).ToList();
+
+                // 4. Truyền dữ liệu ra View
+                ViewBag.ChartLabels = JsonConvert.SerializeObject(last7Days.Select(x => x.Ngay));
+                ViewBag.ChartData = JsonConvert.SerializeObject(last7Days.Select(x => x.TongTien));
+
+                // Tính doanh thu tháng hiện tại (Quick Stat)
+                var monthlyRevenue = await _db.Bookings
+                    .Where(b => b.NgayDat.Month == DateTime.Now.Month && b.NgayDat.Year == DateTime.Now.Year)
+                    .SumAsync(b => b.GiaLucDat);
+                ViewBag.MonthlyRevenue = monthlyRevenue.ToString("N0") + " VNĐ";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Lỗi: " + ex.Message;
+                ViewBag.ChartLabels = "[]";
+                ViewBag.ChartData = "[]";
             }
-            return RedirectToAction("QuanLyHeThong");
+            return View();
         }
 
-        // 2. Chức năng SỬA PHÒNG (Giao diện - Lấy dữ liệu cũ đổ vào form)
-        public IActionResult SuaPhong(string id) // id ở đây chính là SoPhong
+        // 2. QUẢN LÝ TÀI KHOẢN (Account)
+        public async Task<IActionResult> QuanLyTaiKhoan(string searchString)
         {
-            if (string.IsNullOrEmpty(id)) return NotFound();
+            ViewData["ActiveMenu"] = "Accounts";
+            var query = _db.Accounts.Include(a => a.UserProfile).AsQueryable();
 
-            var phong = _db.Rooms.Find(id);
-            if (phong == null) return NotFound();
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.ToLower();
+                query = query.Where(a => a.Username.ToLower().Contains(searchString)
+                                      || (a.UserProfile != null && a.UserProfile.Hoten.ToLower().Contains(searchString)));
+            }
 
-            return View(phong);
+            ViewBag.CurrentFilter = searchString;
+            return View(await query.ToListAsync());
         }
 
-        // 2. Chức năng SỬA PHÒNG (Xử lý cập nhật thay đổi)
+        // 3. QUẢN LÝ NHÂN VIÊN (Dựa trên lớp kế thừa NhanVien)
+        public async Task<IActionResult> QuanLyNhanVien(string searchString)
+        {
+            ViewData["ActiveMenu"] = "Staff";
+            // Lấy danh sách những người là NhanVien trong bảng UserProfiles
+            var query = _db.UserProfiles.OfType<NhanVien>().AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                searchString = searchString.ToLower();
+                query = query.Where(nv => nv.Hoten.ToLower().Contains(searchString)
+                                       || nv.UserID.ToString().Contains(searchString));
+            }
+
+            ViewBag.CurrentFilter = searchString;
+            return View(await query.ToListAsync());
+        }
+
+        // 4. QUẢN LÝ HỆ THỐNG PHÒNG
+        public async Task<IActionResult> QuanLyHeThong()
+        {
+            ViewData["ActiveMenu"] = "System";
+            var phongs = await _db.Rooms.OrderBy(r => r.SoPhong).ToListAsync();
+            return View(phongs);
+        }
+
+        // --- NGHIỆP VỤ PHÒNG ---
+
+        [HttpGet]
+        public IActionResult ThemPhong() => View();
+
         [HttpPost]
-        public IActionResult SuaPhong(Room phong)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ThemPhong(Room phong)
         {
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _db.Entry(phong).State = EntityState.Modified;
-                    _db.SaveChanges();
+                    // Tự động tính giá đề xuất nếu Admin để giá bằng 0
+                    if (phong.GiaPhong == 0) phong.GiaPhong = phong.TinhGiaDeXuat();
+
+                    _db.Rooms.Add(phong);
+                    await _db.SaveChangesAsync();
+                    TempData["Success"] = "Đã thêm phòng thành công!";
                     return RedirectToAction("QuanLyHeThong");
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    ModelState.AddModelError("", "Có lỗi xảy ra khi cập nhật!");
+                    ModelState.AddModelError("", "Số phòng đã tồn tại hoặc lỗi dữ liệu.");
                 }
             }
             return View(phong);
         }
 
-        // 3. Chức năng XÓA PHÒNG (Nên có)
-        [HttpPost]
-        public IActionResult XoaPhong(string id)
+        [HttpGet]
+        public async Task<IActionResult> SuaPhong(int id) // id là SoPhong (int)
         {
-            var phong = _db.Rooms.Find(id);
+            var phong = await _db.Rooms.FindAsync(id);
+            if (phong == null) return NotFound();
+            return View(phong);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SuaPhong(Room phong)
+        {
+            if (ModelState.IsValid)
+            {
+                _db.Entry(phong).State = EntityState.Modified;
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Đã cập nhật phòng #{phong.SoPhong} thành công!";
+                return RedirectToAction("QuanLyHeThong");
+            }
+            return View(phong);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> XoaPhong(int id)
+        {
+            var phong = await _db.Rooms.FindAsync(id);
             if (phong != null)
             {
-                _db.Rooms.Remove(phong);
-                _db.SaveChanges();
-            }
-            return RedirectToAction("QuanLyHeThong");
-        }
-        // Chức năng XÓA NHÂN VIÊN
-        [HttpPost]
-        public IActionResult XoaNhanVien(int id)
-        {
-            try
-            {
-                // 1. Tìm nhân viên theo mã
-                var nv = _db.NhanViens.Find(id);
-
-                if (nv != null)
+                // Kiểm tra xem phòng có đang được đặt không trước khi xóa
+                bool hasBookings = await _db.Bookings.AnyAsync(b => b.SoPhong == id);
+                if (hasBookings)
                 {
-                    // 2. Thực hiện xóa
-                    _db.NhanViens.Remove(nv);
-                    _db.SaveChanges();
-                    TempData["Success"] = "Đã xóa nhân viên thành công!";
+                    TempData["Error"] = "Không thể xóa phòng đang có lịch đặt!";
                 }
                 else
                 {
-                    TempData["Error"] = "Không tìm thấy nhân viên này.";
+                    _db.Rooms.Remove(phong);
+                    await _db.SaveChangesAsync();
+                    TempData["Success"] = "Đã xóa phòng khỏi hệ thống.";
                 }
             }
-            catch (Exception ex)
-            {
-                // Trường hợp nhân viên đang có dữ liệu ở bảng khác (ví dụ: có tài khoản)
-                TempData["Error"] = "Không thể xóa nhân viên này vì có dữ liệu liên quan (tài khoản hoặc lịch làm việc).";
-            }
+            return RedirectToAction("QuanLyHeThong");
+        }
 
+        // 5. XÓA NHÂN VIÊN (Và tài khoản đi kèm)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> XoaNhanVien(int id)
+        {
+            var nv = await _db.UserProfiles.OfType<NhanVien>()
+                             .Include(u => u.Account)
+                             .FirstOrDefaultAsync(u => u.UserID == id);
+
+            if (nv != null)
+            {
+                // Nếu xóa nhân viên, ta nên xóa luôn tài khoản Login của họ để tránh rác DB
+                if (nv.Account != null) _db.Accounts.Remove(nv.Account);
+                
+                _db.NhanViens.Remove(nv);
+                await _db.SaveChangesAsync();
+                TempData["Success"] = "Đã xóa nhân viên và tài khoản liên quan thành công!";
+            }
             return RedirectToAction("QuanLyNhanVien");
         }
     }
